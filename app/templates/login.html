@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión — Plataforma de interoperabilidad clínica</title>
+    <meta name="description" content="Inicio de sesión por rol: paciente, admisionista, médico y auditor.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/vistas.css">
+</head>
+
+<body>
+    <main class="contenedor" style="max-width:520px;padding-top:48px">
+        <h1 style="font-size:1.5rem;margin-bottom:4px">Plataforma distribuida de interoperabilidad clínica</h1>
+        <p class="sub" style="margin-bottom:20px">Red de IPS · Sincelejo · Cartagena · Corozal</p>
+
+        <form class="tarjeta" id="formulario" novalidate>
+            <h2>Iniciar sesión</h2>
+            <p class="sub">El rol del usuario decide qué vista se abre y qué permite la API.</p>
+
+            <div class="campo" style="margin-top:16px">
+                <label for="usuario">Usuario</label>
+                <input id="usuario" name="usuario" autocomplete="username" required autofocus
+                    aria-describedby="ayuda-usuario">
+                <p id="ayuda-usuario" class="sub">Los usuarios de prueba están en el README y en la lista de abajo.</p>
+            </div>
+
+            <div class="campo">
+                <label for="password">Clave</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" id="entrar">Entrar</button>
+            <div id="mensaje" role="alert" aria-live="polite"></div>
+        </form>
+
+        <section class="tarjeta">
+            <h2>Usuarios sintéticos de prueba</h2>
+            <p class="sub">Haga clic en una fila para rellenar el formulario.</p>
+            <div class="tabla-scroll">
+                <table>
+                    <caption>Cada rol ve una vista distinta y la API verifica sus permisos.</caption>
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Clave</th>
+                            <th>Rol</th>
+                            <th>Vista</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-usuarios">
+                        <tr>
+                            <th scope="row">paciente1007</th>
+                            <td>paciente123</td>
+                            <td>paciente</td>
+                            <td>Mi historia</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">admision2</th>
+                            <td>admision123</td>
+                            <td>admisionista</td>
+                            <td>Admisión y triage</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">medico1</th>
+                            <td>medico123</td>
+                            <td>medico</td>
+                            <td>Consulta médica</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">auditor1</th>
+                            <td>auditor123</td>
+                            <td>auditor</td>
+                            <td>Reporte de HC y tablero</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="sub" style="margin-top:10px">
+                Datos sintéticos de uso académico. Las claves se pueden cambiar con variables de entorno
+                (<code>PWD_PACIENTE</code>, <code>PWD_ADMISION</code>, <code>PWD_MEDICO</code>,
+                <code>PWD_AUDITOR</code>) en el archivo <code>.env</code>, que no se versiona.
+            </p>
+        </section>
+    </main>
+
+    <script src="/static/sesion.js"></script>
+    <script>
+        const VISTA_POR_ROL = {
+            paciente: '/paciente',
+            admisionista: '/admision',
+            medico: '/medico',
+            auditor: '/reporte-hc'
+        };
+
+        document.getElementById('tabla-usuarios').addEventListener('click', (evento) => {
+            const fila = evento.target.closest('tr');
+            if (!fila) return;
+            document.getElementById('usuario').value = fila.cells[0].textContent.trim();
+            document.getElementById('password').value = fila.cells[1].textContent.trim();
+            document.getElementById('password').focus();
+        });
+
+        document.getElementById('formulario').addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+            const mensaje = document.getElementById('mensaje');
+            const boton = document.getElementById('entrar');
+            const usuario = document.getElementById('usuario').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!usuario || !password) {
+                mensaje.innerHTML = '<div class="aviso error">Escriba usuario y clave.</div>';
+                return;
+            }
+
+            boton.disabled = true;
+            mensaje.innerHTML = '<p class="cargando">Verificando…</p>';
+            try {
+                const respuesta = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, password })
+                });
+                const datos = await respuesta.json();
+                if (!respuesta.ok) throw new Error(datos.detail || 'No se pudo iniciar sesión');
+
+                Sesion.guardar({ ...datos, usuario });
+                const parametros = new URLSearchParams(window.location.search);
+                window.location.href = parametros.get('volver') || VISTA_POR_ROL[datos.rol] || '/home';
+            } catch (error) {
+                mensaje.innerHTML = `<div class="aviso error"><strong>Acceso denegado.</strong><br>
+                    ${Fmt.escapar(error.message)}<br>
+                    <span class="sub">El intento quedó registrado en la auditoría.</span></div>`;
+                boton.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -553,8 +553,11 @@
         </a>
         <div class="nav-actions">
             <div class="nav-pill"><span class="dot"></span> Sistema Activo</div>
-            <a href="/dashboard" class="nav-link-small"><i class="ph ph-monitor"></i> Nodes</a>
-            <a href="/api/health" class="nav-link-small" target="_blank"><i class="ph ph-activity"></i> API</a>
+            <a href="/login" class="nav-link-small"><i class="ph ph-sign-in"></i> Sesión</a>
+            <a href="/dashboard" class="nav-link-small"><i class="ph ph-monitor"></i> Nodos</a>
+            <a href="/health" class="nav-link-small" target="_blank"><i class="ph ph-activity"></i> Salud</a>
+            <a href="/metrics" class="nav-link-small" target="_blank"><i class="ph ph-chart-line"></i> Métricas</a>
+            <a href="/docs" class="nav-link-small" target="_blank"><i class="ph ph-book-open"></i> API</a>
         </div>
     </nav>
 
@@ -573,8 +576,98 @@
             </div>
         </div>
 
-        <!-- ══ MÓDULOS ══ -->
-        <div class="section-title"><i class="ph ph-squares-four"></i> Módulos del Sistema</div>
+        <!-- ══ LAS CUATRO VISTAS POR ROL ══ -->
+        <div class="section-title"><i class="ph ph-users-three"></i> Las cuatro vistas por rol</div>
+        <p style="color:var(--text-muted);margin:-8px 0 18px;max-width:70ch">
+            Cada vista exige iniciar sesión y la API verifica los permisos del rol: cambiar la pantalla
+            no da acceso. Los usuarios de prueba están en la pantalla de inicio de sesión y en el README.
+        </p>
+
+        <div class="modules-grid">
+
+            <!-- Vista Paciente -->
+            <a href="/paciente" class="module-card" id="card-vista-paciente">
+                <div class="card-accent"></div>
+                <div class="card-body">
+                    <div class="card-icon-wrap"><i class="ph ph-user-circle"></i></div>
+                    <div class="card-tag">Rol paciente</div>
+                    <div class="card-title">Mi historia clínica</div>
+                    <div class="card-desc">La persona atendida ve su historia unificada de las 3 sedes,
+                        descarga su Bundle FHIR y consulta quién accedió a su historia.</div>
+                </div>
+                <div class="card-footer">
+                    <div class="card-features">
+                        <span class="chip">Historia unificada</span>
+                        <span class="chip">Bundle FHIR</span>
+                        <span class="chip">Accesos</span>
+                    </div>
+                    <div class="card-arrow"><i class="ph ph-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Vista Admisionista -->
+            <a href="/admision" class="module-card" id="card-vista-admision">
+                <div class="card-accent"></div>
+                <div class="card-body">
+                    <div class="card-icon-wrap"><i class="ph ph-door-open"></i></div>
+                    <div class="card-tag">Rol admisionista</div>
+                    <div class="card-title">Admisión y triage</div>
+                    <div class="card-desc">Busca o registra al paciente, detecta duplicados entre sedes,
+                        abre la atención con su triage y ve el estado de envío al bus. Sin contenido clínico.</div>
+                </div>
+                <div class="card-footer">
+                    <div class="card-features">
+                        <span class="chip">Duplicados</span>
+                        <span class="chip">Triage</span>
+                        <span class="chip">Estado del bus</span>
+                    </div>
+                    <div class="card-arrow"><i class="ph ph-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Vista Médico -->
+            <a href="/medico" class="module-card" id="card-vista-medico">
+                <div class="card-accent"></div>
+                <div class="card-body">
+                    <div class="card-icon-wrap"><i class="ph ph-stethoscope"></i></div>
+                    <div class="card-tag">Rol médico</div>
+                    <div class="card-title">Consulta y atención</div>
+                    <div class="card-desc">Consulta la historia unificada, registra diagnóstico CIE-10,
+                        formula tecnologías en salud y registra el egreso, con sello de integridad.</div>
+                </div>
+                <div class="card-footer">
+                    <div class="card-features">
+                        <span class="chip">CIE-10</span>
+                        <span class="chip">Sello de auditoría</span>
+                        <span class="chip">Egreso</span>
+                    </div>
+                    <div class="card-arrow"><i class="ph ph-arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Vista Reporte de HC -->
+            <a href="/reporte-hc" class="module-card" id="card-vista-reporte">
+                <div class="card-accent"></div>
+                <div class="card-body">
+                    <div class="card-icon-wrap"><i class="ph ph-file-text"></i></div>
+                    <div class="card-tag">Médico, auditor y paciente</div>
+                    <div class="card-title">Reporte de HC y tablero</div>
+                    <div class="card-desc">Reporte unificado por sede con cobertura de campos, sello de
+                        integridad, exportación y Bundle FHIR. Incluye el tablero de estado de la plataforma.</div>
+                </div>
+                <div class="card-footer">
+                    <div class="card-features">
+                        <span class="chip">Cobertura</span>
+                        <span class="chip">Sello SHA-256</span>
+                        <span class="chip">Tablero</span>
+                    </div>
+                    <div class="card-arrow"><i class="ph ph-arrow-right"></i></div>
+                </div>
+            </a>
+        </div>
+
+        <!-- ══ MÓDULOS DE APOYO ══ -->
+        <div class="section-title"><i class="ph ph-squares-four"></i> Módulos de apoyo y monitoreo</div>
 
         <div class="modules-grid">
 

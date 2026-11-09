@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi historia clínica — Vista Paciente</title>
+    <meta name="description" content="Vista del paciente: historia unificada de las tres sedes, Bundle FHIR y registro de accesos.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/vistas.css">
+</head>
+
+<body>
+    <a class="salto-contenido" href="#contenido">Saltar al contenido</a>
+    <header class="barra" data-barra></header>
+
+    <main class="contenedor" id="contenido">
+        <div id="avisos" aria-live="polite"></div>
+
+        <section class="tarjeta">
+            <h2>Mis datos</h2>
+            <p class="sub">Su historia está fraccionada entre las sedes; aquí se ve unificada.</p>
+            <div class="rejilla" id="ficha" style="margin-top:12px">
+                <p class="cargando">Cargando su historia…</p>
+            </div>
+        </section>
+
+        <div class="pestanas" role="tablist">
+            <button role="tab" id="t-historia" aria-controls="p-historia" aria-selected="true">Mi historia</button>
+            <button role="tab" id="t-accesos" aria-controls="p-accesos" aria-selected="false">Quién vio mi historia</button>
+            <button role="tab" id="t-bundle" aria-controls="p-bundle" aria-selected="false">Mi Bundle FHIR</button>
+        </div>
+
+        <section class="panel" id="p-historia" role="tabpanel" aria-labelledby="t-historia">
+            <div class="tarjeta">
+                <h2>Atenciones por fecha</h2>
+                <p class="sub">Cada atención indica la sede donde ocurrió.</p>
+                <div id="historia" style="margin-top:12px"><p class="cargando">Cargando…</p></div>
+            </div>
+        </section>
+
+        <section class="panel" id="p-accesos" role="tabpanel" aria-labelledby="t-accesos" hidden>
+            <div class="tarjeta">
+                <h2>Accesos a mi historia</h2>
+                <p class="sub">Cada lectura de su historia queda en la cadena de auditoría con su sello.</p>
+                <div class="tabla-scroll" style="margin-top:12px">
+                    <table>
+                        <caption>Quién, cuándo y con qué resultado.</caption>
+                        <thead>
+                            <tr><th>Cuándo</th><th>Quién</th><th>Rol</th><th>Acción</th><th>Resultado</th><th>Sello</th></tr>
+                        </thead>
+                        <tbody id="accesos"><tr><td colspan="6" class="cargando">Cargando…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel" id="p-bundle" role="tabpanel" aria-labelledby="t-bundle" hidden>
+            <div class="tarjeta">
+                <h2>Mi Bundle FHIR</h2>
+                <p class="sub">
+                    Bundle de tipo <code>document</code> con <code>Composition</code>, una sección por sede y los
+                    recursos Patient, Encounter, Condition (CIE-10) y Observation (LOINC).
+                </p>
+                <div class="fila" style="margin-top:12px">
+                    <button type="button" id="btn-descargar">Descargar Bundle (JSON)</button>
+                    <button type="button" class="secundario" id="btn-ver">Ver en pantalla</button>
+                </div>
+                <pre id="bundle" class="sello oculto" style="margin-top:12px;max-height:460px;overflow:auto"></pre>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/sesion.js"></script>
+    <script>
+        let historiaActual = null;
+        let bundleActual = null;
+
+        const usuario = Sesion.exigir(['paciente']);
+        if (usuario) {
+            Sesion.pintarBarra('Mi historia clínica');
+            iniciarPestanas();
+            cargarHistoria();
+        }
+
+        function iniciarPestanas() {
+            const botones = [...document.querySelectorAll('[role="tab"]')];
+            botones.forEach((boton) => boton.addEventListener('click', () => {
+                botones.forEach((otro) => {
+                    const activo = otro === boton;
+                    otro.setAttribute('aria-selected', activo ? 'true' : 'false');
+                    document.getElementById(otro.getAttribute('aria-controls')).hidden = !activo;
+                });
+                if (boton.id === 't-accesos') cargarAccesos();
+            }));
+        }
+
+        async function cargarHistoria() {
+            try {
+                historiaActual = await Sesion.pedir('/api/v1/paciente/mi-historia');
+                pintarFicha(historiaActual);
+                pintarHistoria(historiaActual);
+            } catch (error) {
+                document.getElementById('avisos').innerHTML =
+                    `<div class="aviso error"><strong>No se pudo cargar su historia.</strong><br>${Fmt.escapar(error.message)}</div>`;
+                document.getElementById('historia').innerHTML = '';
+                document.getElementById('ficha').innerHTML = '';
+            }
+        }
+
+        function pintarFicha(historia) {
+            const p = historia.paciente || {};
+            const sedes = (p._sedes || []).map((s) => s.nombre).join(', ') || 'ninguna';
+            document.getElementById('ficha').innerHTML = `
+                <div class="dato"><span>Documento</span><strong>${Fmt.texto(p.tipo_documento)} ${Fmt.texto(p.documento_id ?? historia.documento_id)}</strong></div>
+                <div class="dato"><span>Nombre</span><strong>${Fmt.escapar(Fmt.texto(p.nombre_completo))}</strong></div>
+                <div class="dato"><span>Nacimiento</span><strong>${Fmt.soloFecha(p.fecha_nacimiento)}</strong></div>
+                <div class="dato"><span>Sedes donde me atendieron</span><strong>${Fmt.escapar(sedes)}</strong></div>
+                <div class="dato"><span>Atenciones</span><strong class="grande">${historia.resumen.atenciones}</strong></div>
+                <div class="dato"><span>Diagnósticos</span><strong class="grande">${Fmt.texto(historia.resumen.diagnosticos)}</strong></div>`;
+
+            if (historia.parcial) {
+                const caidas = historia.sedes_no_disponibles.map((s) => s.nombre).join(', ');
+                document.getElementById('avisos').innerHTML = `
+                    <div class="aviso parcial" role="status">
+                      <strong>Vista parcial.</strong> No se pudo contactar con: ${Fmt.escapar(caidas)}.
+                      Lo que ve está completo para las demás sedes; cuando la sede vuelva, aparecerá el resto.
+                    </div>`;
+            } else {
+                document.getElementById('avisos').innerHTML =
+                    '<div class="aviso bien" role="status">Las tres sedes respondieron: su historia está completa.</div>';
+            }
+        }
+
+        function pintarHistoria(historia) {
+            const destino = document.getElementById('historia');
+            if (!historia.atenciones.length) {
+                destino.innerHTML = '<p class="sub">Todavía no hay atenciones registradas en las sedes disponibles.</p>';
+                return;
+            }
+            destino.innerHTML = historia.atenciones.map((a) => {
+                const dx = (a.diagnosticos || []).map((d) =>
+                    `<li><strong>${Fmt.escapar(Fmt.texto(d.cie10))}</strong> — ${Fmt.escapar(Fmt.texto(d.descripcion_cie10 || d.diagnostico_ingreso))}</li>`).join('')
+                    || '<li class="sub">Sin diagnóstico registrado</li>';
+                const obs = (a.observaciones || []).map((o) =>
+                    `<li>${Fmt.escapar(Fmt.texto(o.descripcion))} (LOINC ${Fmt.escapar(Fmt.texto(o.loinc))}): <strong>${Fmt.escapar(Fmt.texto(o.valor))} ${Fmt.escapar(Fmt.texto(o.unidad))}</strong></li>`).join('')
+                    || '<li class="sub">Sin resultados de laboratorio</li>';
+                const med = (a.medicamentos || []).map((m) =>
+                    `<li>${Fmt.escapar(Fmt.texto(m.descripcion_medicamento))} — ${Fmt.escapar(Fmt.texto(m.dosis))} ${Fmt.escapar(Fmt.texto(m.frecuencia))}</li>`).join('')
+                    || '<li class="sub">Sin medicamentos formulados</li>';
+                const egreso = a.egreso
+                    ? `<p class="meta">Egreso: ${Fmt.fecha(a.egreso.fecha_salida)} — ${Fmt.escapar(Fmt.texto(a.egreso.condicion_salida))}</p>`
+                    : '';
+                return `<article class="atencion">
+                    <h4>${Fmt.escapar(Fmt.texto(a.sede_nombre))} · visita ${Fmt.escapar(Fmt.texto(a.visita))}</h4>
+                    <p class="meta">${Fmt.fecha(a.fecha_ingreso)} · ${Fmt.escapar(Fmt.texto(a.entorno_atencion))} ·
+                       triage ${Fmt.escapar(Fmt.texto(a.clasificacion_triage))} ·
+                       ${Fmt.escapar(Fmt.texto(a.profesional_nombre || a.profesional_codigo))}</p>
+                    <p class="meta">${Fmt.escapar(Fmt.texto(a.causa_atencion))}</p>
+                    <div class="rejilla-2">
+                      <div><h3>Diagnósticos (CIE-10)</h3><ul>${dx}</ul></div>
+                      <div><h3>Laboratorio (LOINC)</h3><ul>${obs}</ul></div>
+                      <div><h3>Medicamentos</h3><ul>${med}</ul></div>
+                    </div>
+                    ${egreso}
+                  </article>`;
+            }).join('');
+        }
+
+        async function cargarAccesos() {
+            const cuerpo = document.getElementById('accesos');
+            try {
+                const datos = await Sesion.pedir('/api/v1/paciente/mis-accesos');
+                cuerpo.innerHTML = datos.accesos.length
+                    ? datos.accesos.map((a) => `<tr>
+                        <td>${Fmt.fecha(a.cuando)}</td>
+                        <td>${Fmt.escapar(a.quien)}</td>
+                        <td>${Fmt.escapar(a.rol)}</td>
+                        <td>${Fmt.escapar(a.accion)}</td>
+                        <td><span class="insignia ${a.resultado === 'denegado' ? 'mal' : 'ok'}">${Fmt.escapar(a.resultado)}</span></td>
+                        <td><code>${Fmt.escapar(a.sello)}</code></td>
+                      </tr>`).join('')
+                    : '<tr><td colspan="6" class="sub">Nadie ha consultado su historia todavía.</td></tr>';
+            } catch (error) {
+                cuerpo.innerHTML = `<tr><td colspan="6" class="aviso error">${Fmt.escapar(error.message)}</td></tr>`;
+            }
+        }
+
+        async function obtenerBundle() {
+            if (!bundleActual) bundleActual = await Sesion.pedir('/api/v1/paciente/mi-bundle');
+            return bundleActual;
+        }
+
+        document.getElementById('btn-descargar').addEventListener('click', async () => {
+            try {
+                const bundle = await obtenerBundle();
+                Fmt.descargarJson(bundle, `bundle-fhir-${usuario.documento}.json`);
+            } catch (error) {
+                document.getElementById('avisos').innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+            }
+        });
+
+        document.getElementById('btn-ver').addEventListener('click', async () => {
+            const destino = document.getElementById('bundle');
+            try {
+                const bundle = await obtenerBundle();
+                destino.textContent = JSON.stringify(bundle, null, 2);
+                destino.classList.remove('oculto');
+            } catch (error) {
+                destino.textContent = error.message;
+                destino.classList.remove('oculto');
+            }
+        });
+    </script>
+</body>
+
+</html>

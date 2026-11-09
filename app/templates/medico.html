@@ -840,6 +840,16 @@
             }
         }
     </style>
+    <!-- Sesión por rol: el token viaja en cada llamada a la API y el servidor
+         verifica los permisos. Si el rol no corresponde, la vista no se abre. -->
+    <script src="/static/sesion.js"></script>
+    <script>
+        Sesion.interceptarFetch();
+        const USUARIO_SESION = Sesion.exigir(['medico']);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (USUARIO_SESION) Sesion.insertarCabeceraSesion('Consulta médica');
+        });
+    </script>
 </head>
 
 <body>
@@ -918,12 +928,15 @@
                             class="ph ph-activity"></i> Diagnóstico</button>
                     <button class="tab-btn" id="tab-prescripcion" onclick="switchTab('prescripcion')"><i
                             class="ph ph-pill"></i> Prescripción</button>
+                    <button class="tab-btn" id="tab-egreso" onclick="switchTab('egreso')"><i
+                            class="ph ph-sign-out"></i> Egreso</button>
                 </div>
 
                 <!-- ── TAB: HISTORIA ── -->
                 <div class="tab-panel active" id="panel-historia">
                     <div class="card">
                         <div class="card-title"><i class="ph ph-clock-counter-clockwise"></i> Historia Clínica</div>
+                        <div id="avisoSedes" aria-live="polite"></div>
                         <div class="stats-row" id="statsRow"></div>
                         <div class="divider"></div>
                         <div class="timeline" id="historyTimeline">
@@ -937,6 +950,12 @@
                 <div class="tab-panel" id="panel-atencion">
                     <div class="card">
                         <div class="card-title"><i class="ph ph-first-aid-kit"></i> Registrar Atención</div>
+                        <p style="color:var(--text-muted);font-size:.85rem;margin:-.4rem 0 1rem;max-width:72ch">
+                            Según la matriz de permisos del parcial, <strong>las atenciones las abre admisión</strong>
+                            (con su triage). Si usted entra como médico, la API responderá 403 aquí: use
+                            «Trabajar sobre esta atención» en la historia unificada para registrar el
+                            diagnóstico, la fórmula o el egreso sobre una atención ya abierta.
+                        </p>
                         <div id="alertAtencion" class="alert"></div>
                         <div class="form-grid">
                             <div class="field">
@@ -1113,6 +1132,59 @@
                     </div>
                 </div>
 
+                <!-- ── TAB: EGRESO ── -->
+                <div class="tab-panel" id="panel-egreso">
+                    <div class="card">
+                        <div class="card-title"><i class="ph ph-sign-out"></i> Registrar Egreso</div>
+                        <p style="color:var(--text-muted);font-size:.85rem;margin:-.4rem 0 1rem;max-width:72ch">
+                            Al guardar, la API devuelve el <strong>sello de integridad</strong>: el hash del evento
+                            de auditoría que queda encadenado al anterior. Ese sello se guarda con el egreso.
+                        </p>
+                        <div id="alertEgreso" class="alert"></div>
+                        <div class="form-grid">
+                            <div class="field">
+                                <label for="eAtencionId">Atención ID</label>
+                                <input type="number" id="eAtencionId" placeholder="ID de la atención" min="1" />
+                            </div>
+                            <div class="field">
+                                <label for="eFechaSalida">Fecha y hora de salida</label>
+                                <input type="datetime-local" id="eFechaSalida" />
+                            </div>
+                            <div class="field">
+                                <label for="eCondicion">Condición de salida</label>
+                                <select id="eCondicion">
+                                    <option value="Mejoria">Mejoría</option>
+                                    <option value="Estacionario">Estacionario</option>
+                                    <option value="Empeoramiento">Empeoramiento</option>
+                                    <option value="Remision">Remisión a otra sede</option>
+                                    <option value="Muerte">Muerte</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="eTipoIncapacidad">Tipo de incapacidad</label>
+                                <input type="text" id="eTipoIncapacidad" placeholder="Ej: Enfermedad general" />
+                            </div>
+                            <div class="field">
+                                <label for="eDiasIncapacidad">Días de incapacidad</label>
+                                <input type="number" id="eDiasIncapacidad" min="0" />
+                            </div>
+                            <div class="field">
+                                <label for="eResponsable">Responsable del egreso</label>
+                                <input type="text" id="eResponsable" placeholder="Nombre del profesional" />
+                            </div>
+                            <div class="field" style="grid-column:1/-1">
+                                <label for="eAlergias">Alergias</label>
+                                <input type="text" id="eAlergias" placeholder="Ninguna conocida" />
+                            </div>
+                        </div>
+                        <div class="action-row">
+                            <button class="btn btn-success" onclick="registrarEgreso()">
+                                <i class="ph ph-check-circle"></i> Registrar Egreso
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div><!-- /patientView -->
 
         </main>
@@ -1234,60 +1306,144 @@
         }
 
         // ══════════════════════════════════
+        // EGRESO
+        // ══════════════════════════════════
+        async function registrarEgreso() {
+            const alertEl = document.getElementById('alertEgreso');
+            if (!currentPatient) return;
+            const doc = currentPatient.documento_id || currentPatient.identifier?.[0]?.value;
+            const atencionId = document.getElementById('eAtencionId').value;
+            if (!atencionId) {
+                showAlert(alertEl, 'error', 'Indique la atención. Use «Trabajar sobre esta atención» en la historia.');
+                return;
+            }
+            const fecha = document.getElementById('eFechaSalida').value;
+            const body = {
+                documento_id: parseInt(doc),
+                sede_id: sedeAtencionSeleccionada || USUARIO_SESION?.sede_id || null,
+                atencion_id: parseInt(atencionId),
+                fecha_salida: fecha ? fecha.replace('T', ' ') + ':00' : null,
+                condicion_salida: document.getElementById('eCondicion').value,
+                tipo_incapacidad: document.getElementById('eTipoIncapacidad').value || null,
+                dias_incapacidad: document.getElementById('eDiasIncapacidad').value
+                    ? parseInt(document.getElementById('eDiasIncapacidad').value) : null,
+                responsable_egreso: document.getElementById('eResponsable').value || null,
+                alergias: document.getElementById('eAlergias').value || null,
+            };
+            showAlert(alertEl, 'info', '<div class="spinner"></div> Registrando egreso…');
+            try {
+                const r = await fetch('/api/v1/medico/egreso', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.detail || 'Error');
+                showAlert(alertEl, 'success',
+                    `✅ Egreso registrado en ${data.nodo} — id ${data.egreso_id}.<br>
+                     <strong>Sello de integridad:</strong> <code>${(data.sello_auditoria || '').slice(0, 32)}…</code>`);
+                await loadHistory(currentPatient);
+            } catch (e) {
+                showAlert(alertEl, 'error', '❌ ' + e.message);
+            }
+        }
+
+        // ══════════════════════════════════
         // HISTORY
         // ══════════════════════════════════
+        // Sede de la atención seleccionada (una escritura va a la sede donde
+        // ocurrió la atención, no a la sede del médico).
+        let sedeAtencionSeleccionada = null;
+
         async function loadHistory(p) {
             const doc = p.documento_id || p.identifier?.[0]?.value;
             const tl = document.getElementById('historyTimeline');
             const stats = document.getElementById('statsRow');
-            tl.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto 1rem;border-color:rgba(255,255,255,.2);border-top-color:var(--primary);"></div>Cargando historia…</div>';
+            tl.innerHTML = '<div class="empty-state"><div class="spinner" style="margin:0 auto 1rem;border-color:rgba(255,255,255,.2);border-top-color:var(--primary);"></div>Consultando las 3 sedes…</div>';
 
             try {
-                const r = await fetch(`/api/v1/medico/historia/${doc}`);
+                // Consulta unificada: una sola llamada recorre las tres sedes.
+                const r = await fetch(`/api/v1/historia/${doc}`);
                 const data = await r.json();
+                if (!r.ok) throw new Error(data.detail || 'No se pudo consultar la historia');
 
-                // Stats
+                const sedesConRegistro = (data.resumen.sedes_con_registro || []).length;
                 stats.innerHTML = `
-        <div class="stat-card"><div class="stat-num">${data.total_atenciones || 0}</div><div class="stat-label">Atenciones</div></div>
-        <div class="stat-card"><div class="stat-num">${data.total_diagnosticos || 0}</div><div class="stat-label">Diagnósticos</div></div>
-        <div class="stat-card"><div class="stat-num">${data.total_medicamentos || 0}</div><div class="stat-label">Medicamentos</div></div>
+        <div class="stat-card"><div class="stat-num">${data.resumen.atenciones || 0}</div><div class="stat-label">Atenciones</div></div>
+        <div class="stat-card"><div class="stat-num">${data.resumen.diagnosticos || 0}</div><div class="stat-label">Diagnósticos</div></div>
+        <div class="stat-card"><div class="stat-num">${data.resumen.observaciones || 0}</div><div class="stat-label">Resultados de laboratorio</div></div>
+        <div class="stat-card"><div class="stat-num">${data.resumen.medicamentos || 0}</div><div class="stat-label">Medicamentos</div></div>
+        <div class="stat-card"><div class="stat-num">${sedesConRegistro}/3</div><div class="stat-label">Sedes con registro</div></div>
       `;
 
-                // Timeline
+                // Aviso de degradación: si una sede no respondió, se dice.
+                const avisoSedes = document.getElementById('avisoSedes');
+                if (data.parcial) {
+                    avisoSedes.innerHTML = `<div class="alert alert-error show" role="status" style="margin-bottom:1rem">
+                        <i class="ph ph-warning"></i> <strong>Vista parcial.</strong>
+                        No respondieron: ${data.sedes_no_disponibles.map(x => x.nombre).join(', ')}.
+                        La historia que ve está incompleta; no la tome como definitiva.</div>`;
+                } else {
+                    avisoSedes.innerHTML = `<div class="alert alert-success show" role="status" style="margin-bottom:1rem">
+                        <i class="ph ph-check-circle"></i> Las tres sedes respondieron: historia unificada completa.</div>`;
+                }
+
                 if (!data.atenciones || !data.atenciones.length) {
-                    tl.innerHTML = '<div class="empty-state"><i class="ph ph-file-text"></i> Sin atenciones registradas.</div>';
+                    tl.innerHTML = '<div class="empty-state"><i class="ph ph-file-text"></i> Sin atenciones registradas en las sedes disponibles.</div>';
                     return;
                 }
 
                 tl.innerHTML = data.atenciones.map(a => {
                     const fecha = a.fecha_ingreso ? new Date(a.fecha_ingreso).toLocaleString('es-CO') : '—';
                     const soap = a.causa_atencion || '—';
-                    const dx = data.diagnosticos
-                        .filter(d => d.atencion_id === a.atencion_id)
-                        .map(d => `${d.diagnostico_ingreso || ''} ${d.diagnostico_egreso || ''}`.trim())
+                    const dx = (a.diagnosticos || [])
+                        .map(d => `${d.cie10 ? '<strong>' + d.cie10 + '</strong> ' : ''}${d.descripcion_cie10 || d.diagnostico_ingreso || ''}`.trim())
                         .join(', ') || 'Sin diagnóstico';
-                    const med = data.medicamentos
-                        .filter(m => m.atencion_id === a.atencion_id)
+                    const med = (a.medicamentos || [])
                         .map(m => m.descripcion_medicamento)
                         .join(', ') || 'Sin prescripción';
+                    const obs = (a.observaciones || [])
+                        .map(o => `${o.descripcion || o.loinc}: ${o.valor} ${o.unidad || ''}`.trim())
+                        .join(' · ') || 'Sin resultados';
 
                     return `<div class="timeline-item">
           <div class="tl-icon blue"><i class="ph ph-hospital"></i></div>
           <div class="tl-body">
             <div class="tl-header">
-              <span class="tl-title">${a.entorno_atencion || 'Atención'} — ID ${a.atencion_id}</span>
+              <span class="tl-title">${a.sede_nombre || 'Sede ' + a.sede_id} — ${a.entorno_atencion || 'Atención'} — ID ${a.atencion_id}</span>
               <span class="tl-date">${fecha}</span>
               ${a.clasificacion_triage ? `<span class="tag amber">Triage ${a.clasificacion_triage}</span>` : ''}
+              ${a.fhir_encounter_id ? '<span class="tag green">en FHIR</span>' : '<span class="tag">sin normalizar</span>'}
             </div>
             <div class="tl-content">
+              <strong>Visita:</strong> ${a.visita || '—'}<br>
               <strong>Entidad:</strong> ${a.entidad_salud || '—'}<br>
               <strong>Motivo:</strong> ${soap}<br>
               <strong>Diagnóstico:</strong> ${dx}<br>
+              <strong>Laboratorio:</strong> ${obs}<br>
               <strong>Medicamentos:</strong> ${med}
+              <div style="margin-top:.6rem">
+                <button type="button" class="btn-sm" data-usar-atencion="${a.atencion_id}"
+                        data-sede="${a.sede_id}">Trabajar sobre esta atención</button>
+              </div>
             </div>
           </div>
         </div>`;
                 }).join('');
+
+                // «Trabajar sobre esta atención» rellena los formularios de
+                // diagnóstico y prescripción con su id y su sede.
+                tl.querySelectorAll('[data-usar-atencion]').forEach(boton =>
+                    boton.addEventListener('click', () => {
+                        const id = boton.dataset.usarAtencion;
+                        sedeAtencionSeleccionada = parseInt(boton.dataset.sede);
+                        document.getElementById('dAtencionId').value = id;
+                        document.getElementById('rxAtencionId').value = id;
+                        document.getElementById('avisoSedes').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        document.getElementById('avisoSedes').innerHTML =
+                            `<div class="alert alert-success show" role="status" style="margin-bottom:1rem">
+                               <i class="ph ph-check-circle"></i> Trabajando sobre la atención <strong>${id}</strong>
+                               de la sede ${sedeAtencionSeleccionada}. Los registros se guardarán en esa sede.</div>`;
+                    }));
 
             } catch (e) {
                 tl.innerHTML = '<div class="empty-state"><i class="ph ph-warning"></i> Error cargando historia.</div>';
@@ -1329,6 +1485,7 @@
 
             const body = {
                 documento_id: parseInt(doc),
+                sede_id: sedeAtencionSeleccionada || USUARIO_SESION?.sede_id || null,
                 entidad_salud: document.getElementById('aEntidad').value,
                 fecha_ingreso: fechaIngreso.replace('T', ' ') + ':00',
                 modalidad_entrega: document.getElementById('aModalidad').value,
@@ -1373,6 +1530,7 @@
             const body = {
                 documento_id: parseInt(doc),
                 atencion_id: parseInt(atencionId),
+                sede_id: sedeAtencionSeleccionada || USUARIO_SESION?.sede_id || null,
                 tipo_diagnostico_ingreso: document.getElementById('dTipoIngreso').value || null,
                 diagnostico_ingreso: document.getElementById('dDxIngreso').value || null,
                 tipo_diagnostico_egreso: document.getElementById('dTipoEgreso').value || null,
@@ -1439,6 +1597,7 @@
                 meds.push({
                     documento_id: parseInt(doc),
                     atencion_id: parseInt(atencionId),
+                sede_id: sedeAtencionSeleccionada || USUARIO_SESION?.sede_id || null,
                     tecnologia_id: crypto.randomUUID(),
                     descripcion_medicamento: document.getElementById(`rx-desc-${id}`)?.value || null,
                     dosis: document.getElementById(`rx-dosis-${id}`)?.value || null,

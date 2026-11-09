@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de HC — Historia unificada y tablero</title>
+    <meta name="description" content="Reporte de la historia clínica unificada por sede, con cobertura de campos, sello de integridad y tablero de estado de la plataforma.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/vistas.css">
+</head>
+
+<body>
+    <a class="salto-contenido" href="#contenido">Saltar al contenido</a>
+    <header class="barra" data-barra></header>
+
+    <main class="contenedor" id="contenido">
+        <div class="pestanas" role="tablist">
+            <button role="tab" id="t-reporte" aria-controls="p-reporte" aria-selected="true">Reporte de HC</button>
+            <button role="tab" id="t-estado" aria-controls="p-estado" aria-selected="false">Estado de la plataforma</button>
+            <button role="tab" id="t-bus" aria-controls="p-bus" aria-selected="false">Mensajes del bus</button>
+            <button role="tab" id="t-auditoria" aria-controls="p-auditoria" aria-selected="false">Auditoría</button>
+        </div>
+
+        <!-- ── Reporte ─────────────────────────────────────────────────── -->
+        <section class="panel" id="p-reporte" role="tabpanel" aria-labelledby="t-reporte">
+            <form class="tarjeta" id="formulario-buscar">
+                <h2>Generar el reporte de un paciente</h2>
+                <p class="sub">La consulta recorre las tres sedes. Si una no responde, el reporte se marca como parcial.</p>
+                <div class="fila" style="margin-top:12px">
+                    <div class="campo">
+                        <label for="documento">Documento del paciente</label>
+                        <input id="documento" name="documento" inputmode="numeric" value="1001"
+                            aria-describedby="ayuda-doc" required>
+                        <p id="ayuda-doc" class="sub">El paciente 1001 tiene atenciones en las tres sedes.</p>
+                    </div>
+                    <div class="campo" style="flex:0 0 auto">
+                        <button type="submit">Generar reporte</button>
+                    </div>
+                </div>
+            </form>
+
+            <div id="avisos" aria-live="polite"></div>
+            <div id="reporte"></div>
+        </section>
+
+        <!-- ── Tablero de estado ───────────────────────────────────────── -->
+        <section class="panel" id="p-estado" role="tabpanel" aria-labelledby="t-estado" hidden>
+            <div class="tarjeta">
+                <h2>Nodos de las sedes</h2>
+                <p class="sub">Si una sede cae, la vista sigue respondiendo con las otras dos y la marca como no disponible.</p>
+                <div class="rejilla" id="nodos" style="margin-top:12px"><p class="cargando">Cargando…</p></div>
+            </div>
+
+            <div class="tarjeta">
+                <h2>Cobertura FHIR por sede</h2>
+                <p class="sub">Pacientes del sistema legado que ya tienen su recurso Patient en FHIR.</p>
+                <div id="cobertura" style="margin-top:12px"><p class="cargando">Cargando…</p></div>
+                <div class="fila" style="margin-top:14px">
+                    <button type="button" class="secundario" data-migrar="1">Normalizar sede 1</button>
+                    <button type="button" class="secundario" data-migrar="2">Normalizar sede 2</button>
+                    <button type="button" class="secundario" data-migrar="3">Normalizar sede 3</button>
+                </div>
+                <div id="aviso-migrar" aria-live="polite"></div>
+            </div>
+
+            <div class="tarjeta">
+                <h2>Servicios y métricas del bus</h2>
+                <div class="rejilla" id="servicios" style="margin-top:12px"><p class="cargando">Cargando…</p></div>
+            </div>
+
+            <div class="tarjeta" id="tarjeta-nodos-control">
+                <h2>Prueba de resiliencia</h2>
+                <p class="sub">Solo el rol auditor puede apagar o encender un nodo, y la acción queda en la auditoría.</p>
+                <div class="fila" style="margin-top:12px" id="control-nodos"></div>
+                <div id="aviso-nodos" aria-live="polite"></div>
+            </div>
+
+            <div class="tarjeta">
+                <h2>Evidencias de la capa de datos</h2>
+                <div class="fila">
+                    <button type="button" class="secundario" id="btn-explain">EXPLAIN de la consulta distribuida</button>
+                    <button type="button" class="secundario" id="btn-acid">Prueba de transacción atómica (sede 1)</button>
+                </div>
+                <pre id="evidencias" class="sello oculto" style="margin-top:12px;max-height:380px;overflow:auto"></pre>
+            </div>
+        </section>
+
+        <!-- ── Mensajes del bus ────────────────────────────────────────── -->
+        <section class="panel" id="p-bus" role="tabpanel" aria-labelledby="t-bus" hidden>
+            <div class="tarjeta">
+                <h2>Mensajes procesados por el HSB</h2>
+                <p class="sub">Estados: recibido, validado, transformado, entregado, rechazado, reintentando y muerto.</p>
+                <div class="fila" style="margin-top:12px">
+                    <div class="campo">
+                        <label for="filtro-estado">Filtrar por estado</label>
+                        <select id="filtro-estado">
+                            <option value="">Todos</option>
+                            <option value="entregado">Entregado</option>
+                            <option value="rechazado">Rechazado</option>
+                            <option value="reintentando">Reintentando</option>
+                            <option value="muerto">Muerto</option>
+                        </select>
+                    </div>
+                    <div class="campo" style="flex:0 0 auto">
+                        <button type="button" class="secundario" id="btn-refrescar-bus">Refrescar</button>
+                    </div>
+                </div>
+                <div class="tabla-scroll" style="margin-top:12px">
+                    <table>
+                        <caption>Un mensaje rechazado conserva sus motivos: nunca se pierde en silencio.</caption>
+                        <thead>
+                            <tr><th>Id</th><th>Formato</th><th>Tipo</th><th>Sede</th><th>Documento</th>
+                                <th>Estado</th><th>Intentos</th><th>Latencia</th><th>Motivos / recursos</th><th></th></tr>
+                        </thead>
+                        <tbody id="mensajes"><tr><td colspan="10" class="cargando">Cargando…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Auditoría ───────────────────────────────────────────────── -->
+        <section class="panel" id="p-auditoria" role="tabpanel" aria-labelledby="t-auditoria" hidden>
+            <div class="tarjeta">
+                <h2>Verificador de integridad</h2>
+                <p class="sub">Recorre la cadena y recalcula cada hash. Si alguien altera o borra una fila, lo señala.</p>
+                <div class="fila" style="margin-top:12px">
+                    <button type="button" id="btn-verificar">Verificar la cadena</button>
+                </div>
+                <div id="resultado-verificacion" aria-live="polite"></div>
+            </div>
+
+            <div class="tarjeta" id="tarjeta-eventos">
+                <h2>Últimos eventos</h2>
+                <div class="tabla-scroll" style="margin-top:12px">
+                    <table>
+                        <caption>hash = SHA-256(hash anterior + contenido del evento).</caption>
+                        <thead>
+                            <tr><th>Id</th><th>Cuándo</th><th>Actor</th><th>Rol</th><th>Acción</th>
+                                <th>Recurso</th><th>Resultado</th><th>Hash</th></tr>
+                        </thead>
+                        <tbody id="eventos"><tr><td colspan="8" class="cargando">Cargando…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/sesion.js"></script>
+    <script>
+        let reporteActual = null;
+        const usuario = Sesion.exigir(['medico', 'auditor', 'paciente']);
+
+        if (usuario) {
+            Sesion.pintarBarra('Reporte de historia clínica');
+            iniciarPestanas();
+            if (usuario.rol === 'paciente') {
+                document.getElementById('documento').value = usuario.documento;
+                document.getElementById('documento').readOnly = true;
+                document.getElementById('t-estado').classList.add('oculto');
+                document.getElementById('t-bus').classList.add('oculto');
+                document.getElementById('t-auditoria').classList.add('oculto');
+            }
+            generarReporte();
+        }
+
+        function iniciarPestanas() {
+            const botones = [...document.querySelectorAll('[role="tab"]')];
+            botones.forEach((boton) => boton.addEventListener('click', () => {
+                botones.forEach((otro) => {
+                    const activo = otro === boton;
+                    otro.setAttribute('aria-selected', activo ? 'true' : 'false');
+                    document.getElementById(otro.getAttribute('aria-controls')).hidden = !activo;
+                });
+                if (boton.id === 't-estado') cargarEstado();
+                if (boton.id === 't-bus') cargarMensajes();
+                if (boton.id === 't-auditoria') cargarEventos();
+            }));
+        }
+
+        /* ── Reporte ──────────────────────────────────────────────────── */
+        document.getElementById('formulario-buscar').addEventListener('submit', (evento) => {
+            evento.preventDefault();
+            generarReporte();
+        });
+
+        async function generarReporte() {
+            const documento = document.getElementById('documento').value.trim();
+            const avisos = document.getElementById('avisos');
+            const destino = document.getElementById('reporte');
+            if (!documento) return;
+
+            destino.innerHTML = '<p class="cargando">Consultando las tres sedes…</p>';
+            avisos.innerHTML = '';
+            try {
+                reporteActual = await Sesion.pedir(`/api/v1/reporte/${encodeURIComponent(documento)}`);
+                pintarReporte(reporteActual);
+            } catch (error) {
+                destino.innerHTML = '';
+                avisos.innerHTML = `<div class="aviso error" role="alert"><strong>No se pudo generar el reporte.</strong><br>${Fmt.escapar(error.message)}</div>`;
+            }
+        }
+
+        function pintarReporte(r) {
+            const p = r.paciente || {};
+            const c = r.cobertura_campos;
+
+            const avisoEstado = r.completo
+                ? '<div class="aviso bien" role="status">Reporte completo: las tres sedes respondieron.</div>'
+                : `<div class="aviso parcial" role="status"><strong>Reporte parcial.</strong> ${Fmt.escapar(r.aviso || '')}
+                     No puede presentarse como historia completa.</div>`;
+
+            const sedes = r.sedes.map((s) => {
+                if (!s.disponible) {
+                    return `<div class="tarjeta" style="border-color:rgba(239,68,68,.45)">
+                        <h3>Sede ${Fmt.escapar(s.nombre)} <span class="insignia mal">no disponible</span></h3>
+                        <p class="sub">${Fmt.escapar(Fmt.texto(s.error))}</p></div>`;
+                }
+                const atenciones = (s.atenciones || []).map((a) => {
+                    const dx = (a.diagnosticos || []).map((d) =>
+                        `<li><strong>${Fmt.escapar(Fmt.texto(d.cie10))}</strong> — ${Fmt.escapar(Fmt.texto(d.descripcion_cie10 || d.diagnostico_ingreso))}</li>`).join('')
+                        || '<li class="sub">Sin diagnóstico</li>';
+                    const obs = (a.observaciones || []).map((o) =>
+                        `<li>${Fmt.escapar(Fmt.texto(o.descripcion))} (${Fmt.escapar(Fmt.texto(o.loinc))}): <strong>${Fmt.escapar(Fmt.texto(o.valor))} ${Fmt.escapar(Fmt.texto(o.unidad))}</strong></li>`).join('')
+                        || '<li class="sub">Sin laboratorio</li>';
+                    const med = (a.medicamentos || []).map((m) =>
+                        `<li>${Fmt.escapar(Fmt.texto(m.descripcion_medicamento))} ${Fmt.escapar(Fmt.texto(m.dosis))}</li>`).join('')
+                        || '<li class="sub">Sin tecnologías en salud</li>';
+                    return `<article class="atencion">
+                        <h4>Visita ${Fmt.escapar(Fmt.texto(a.visita))} · ${Fmt.fecha(a.fecha_ingreso)}</h4>
+                        <p class="meta">${Fmt.escapar(Fmt.texto(a.entorno_atencion))} · triage ${Fmt.escapar(Fmt.texto(a.clasificacion_triage))} ·
+                           ${Fmt.escapar(Fmt.texto(a.profesional_nombre || a.profesional_codigo))}
+                           ${a.fhir_encounter_id ? '<span class="insignia ok">en FHIR</span>' : '<span class="insignia alerta">sin normalizar</span>'}</p>
+                        <div class="rejilla-2">
+                          <div><h3>Diagnósticos (CIE-10)</h3><ul>${dx}</ul></div>
+                          <div><h3>Laboratorio (LOINC)</h3><ul>${obs}</ul></div>
+                          <div><h3>Tecnologías en salud</h3><ul>${med}</ul></div>
+                        </div></article>`;
+                }).join('') || '<p class="sub">Sin atenciones en esta sede.</p>';
+
+                return `<div class="tarjeta">
+                    <h3>Sede ${Fmt.escapar(s.nombre)} <span class="insignia ok">responde</span></h3>
+                    <p class="sub">${s.totales.atenciones} atenciones · ${s.totales.diagnosticos} diagnósticos ·
+                       ${s.totales.observaciones} resultados</p>${atenciones}</div>`;
+            }).join('');
+
+            const faltantes = (c.faltantes || []).slice(0, 30).map((f) =>
+                `<li>${Fmt.escapar(f.ambito)}: ${Fmt.escapar(f.campo)}</li>`).join('')
+                || '<li class="sub">No falta ningún campo</li>';
+
+            document.getElementById('reporte').innerHTML = `
+                ${avisoEstado}
+                <div class="tarjeta">
+                  <h2>Paciente</h2>
+                  <div class="rejilla" style="margin-top:12px">
+                    <div class="dato"><span>Documento</span><strong>${Fmt.texto(p.tipo_documento)} ${Fmt.texto(p.documento_id ?? r.documento_id)}</strong></div>
+                    <div class="dato"><span>Nombre</span><strong>${Fmt.escapar(Fmt.texto(p.nombre_completo))}</strong></div>
+                    <div class="dato"><span>Nacimiento</span><strong>${Fmt.soloFecha(p.fecha_nacimiento)}</strong></div>
+                    <div class="dato"><span>Sexo</span><strong>${Fmt.texto(p.sexo)}</strong></div>
+                    <div class="dato"><span>Id FHIR</span><strong>${Fmt.escapar(Fmt.texto(p.fhir_patient_id || 'sin normalizar'))}</strong></div>
+                    <div class="dato"><span>Atenciones</span><strong class="grande">${r.resumen.atenciones}</strong></div>
+                  </div>
+                  <div class="fila" style="margin-top:14px">
+                    <button type="button" id="btn-imprimir">Imprimir o guardar en PDF</button>
+                    <button type="button" class="secundario" id="btn-bundle">Descargar Bundle FHIR</button>
+                    <button type="button" class="secundario" id="btn-validar">Validar Bundle contra HAPI</button>
+                  </div>
+                  <div id="aviso-bundle" aria-live="polite"></div>
+                </div>
+
+                <h2 style="margin:18px 0 10px">Atenciones agrupadas por sede</h2>
+                ${sedes}
+
+                <div class="tarjeta">
+                  <h2>Cobertura de campos de la historia</h2>
+                  <p class="sub">${c.campos_presentes} de ${c.campos_totales} campos diligenciados (${c.cobertura_pct} %).</p>
+                  <div class="barra-progreso" style="margin:8px 0 12px"><i style="width:${c.cobertura_pct}%"></i></div>
+                  <h3>Campos faltantes (${c.total_faltantes})</h3>
+                  <ul style="margin-left:18px;font-size:.87rem">${faltantes}</ul>
+                </div>
+
+                <div class="tarjeta">
+                  <h2>Sello de integridad del reporte</h2>
+                  <p class="sub">SHA-256 del contenido clínico. Si el contenido cambia, el sello cambia.</p>
+                  <p class="sello" style="margin-top:8px">${Fmt.escapar(r.sello_integridad)}</p>
+                  <p class="sub" style="margin-top:8px">Evento de auditoría de esta consulta:
+                     <code>${Fmt.escapar(Fmt.texto(r.sello_auditoria))}</code></p>
+                </div>`;
+
+            document.getElementById('btn-imprimir').addEventListener('click', () => {
+                const documento = document.getElementById('documento').value.trim();
+                abrirConToken(`/api/v1/reporte/${encodeURIComponent(documento)}/html`);
+            });
+            document.getElementById('btn-bundle').addEventListener('click', async () => {
+                const documento = document.getElementById('documento').value.trim();
+                try {
+                    const bundle = await Sesion.pedir(`/api/v1/reporte/${encodeURIComponent(documento)}/bundle`);
+                    Fmt.descargarJson(bundle, `bundle-fhir-${documento}.json`);
+                } catch (error) {
+                    document.getElementById('aviso-bundle').innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+                }
+            });
+            document.getElementById('btn-validar').addEventListener('click', async () => {
+                const documento = document.getElementById('documento').value.trim();
+                const destino = document.getElementById('aviso-bundle');
+                destino.innerHTML = '<p class="cargando">Validando contra HAPI…</p>';
+                try {
+                    const v = await Sesion.pedir(`/api/v1/reporte/${encodeURIComponent(documento)}/bundle/validar`);
+                    destino.innerHTML = v.valido
+                        ? '<div class="aviso bien">El validador de HAPI acepta el Bundle sin errores.</div>'
+                        : `<div class="aviso error"><strong>El validador reportó errores:</strong><ul>${
+                            v.errores.map((e) => `<li>${Fmt.escapar(e)}</li>`).join('')}</ul></div>`;
+                } catch (error) {
+                    destino.innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+                }
+            });
+        }
+
+        /* El HTML imprimible necesita el token: se pide y se abre en una ventana. */
+        async function abrirConToken(url) {
+            try {
+                const html = await Sesion.pedir(url);
+                const ventana = window.open('', '_blank');
+                ventana.document.write(html);
+                ventana.document.close();
+            } catch (error) {
+                document.getElementById('aviso-bundle').innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+            }
+        }
+
+        /* ── Tablero ──────────────────────────────────────────────────── */
+        async function cargarEstado() {
+            try {
+                const e = await Sesion.pedir('/api/v1/plataforma/estado');
+                document.getElementById('nodos').innerHTML = e.sedes.map((s) => `
+                    <div class="dato">
+                      <span>Sede ${s.sede_id} · ${Fmt.escapar(s.nombre)}</span>
+                      <strong>${s.disponible ? '<span class="insignia ok">disponible</span>' : '<span class="insignia mal">no disponible</span>'}</strong>
+                      <p class="sub">${Fmt.escapar(s.nodo)} · puerto ${s.puerto} · ${s.latencia_ms} ms</p>
+                      ${s.error ? `<p class="sub">${Fmt.escapar(s.error)}</p>` : ''}
+                    </div>`).join('');
+
+                document.getElementById('cobertura').innerHTML = e.cobertura_fhir.por_sede.map((c) => `
+                    <div style="margin-bottom:12px">
+                      <p><strong>${Fmt.escapar(c.nombre)}</strong> —
+                         ${c.disponible ? `${c.migrados} de ${c.total} pacientes (${c.cobertura_pct} %)`
+                                        : '<span class="insignia mal">sede no disponible</span>'}</p>
+                      <div class="barra-progreso"><i style="width:${c.cobertura_pct || 0}%"></i></div>
+                    </div>`).join('') +
+                    `<p class="sub">Cobertura global: <strong>${e.cobertura_fhir.global_pct} %</strong></p>`;
+
+                const bus = e.bus || {};
+                document.getElementById('servicios').innerHTML = `
+                    <div class="dato"><span>Almacén central</span><strong>${e.almacen_central.disponible ? '<span class="insignia ok">arriba</span>' : '<span class="insignia mal">caído</span>'}</strong></div>
+                    <div class="dato"><span>HAPI FHIR</span><strong>${e.hapi_fhir.disponible ? '<span class="insignia ok">' + Fmt.texto(e.hapi_fhir.fhir_version) + '</span>' : '<span class="insignia mal">no responde</span>'}</strong></div>
+                    <div class="dato"><span>Sedes disponibles</span><strong class="grande">${e.sedes_disponibles}</strong></div>
+                    <div class="dato"><span>Mensajes totales</span><strong class="grande">${Fmt.texto(bus.total_mensajes)}</strong></div>
+                    <div class="dato"><span>Latencia media del bus</span><strong>${Fmt.texto(bus.latencia_media_ms)} ms</strong></div>
+                    <div class="dato"><span>Fallidos</span><strong>${Fmt.texto(bus.porcentaje_fallidos)} %</strong></div>
+                    <div class="dato"><span>Duplicados frenados</span><strong>${Fmt.texto(bus.duplicados_detectados)}</strong></div>
+                    <div class="dato"><span>En cola</span><strong>${Fmt.texto(bus.en_cola)}</strong></div>
+                    <div class="dato"><span>Muertos</span><strong>${Fmt.texto(bus.muertos)}</strong></div>
+                    <div class="dato"><span>Auditoría</span><strong>${e.auditoria.integra === true ? '<span class="insignia ok">cadena íntegra</span>'
+                        : e.auditoria.integra === false ? '<span class="insignia mal">alterada</span>' : '<span class="insignia alerta">sin verificar</span>'}</strong>
+                        <p class="sub">${Fmt.texto(e.auditoria.total_eventos)} eventos</p></div>`;
+
+                if (Sesion.puede('nodo:controlar')) {
+                    document.getElementById('control-nodos').innerHTML = e.sedes.map((s) => `
+                        <button type="button" class="${s.disponible ? 'peligro' : ''}"
+                                data-nodo="${s.sede_id}" data-accion="${s.disponible ? 'stop' : 'start'}">
+                          ${s.disponible ? 'Apagar' : 'Encender'} sede ${s.sede_id} (${Fmt.escapar(s.nombre)})
+                        </button>`).join('');
+                    document.querySelectorAll('[data-nodo]').forEach((boton) =>
+                        boton.addEventListener('click', () => controlarNodo(boton.dataset.nodo, boton.dataset.accion)));
+                } else {
+                    document.getElementById('tarjeta-nodos-control').innerHTML =
+                        `<h2>Prueba de resiliencia</h2>
+                         <p class="sub">Su rol no puede apagar nodos. Desde el host:
+                         <code>docker compose stop pg_nodo2</code> y luego <code>docker compose start pg_nodo2</code>.</p>`;
+                }
+            } catch (error) {
+                document.getElementById('nodos').innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+            }
+        }
+
+        async function controlarNodo(sede, accion) {
+            const destino = document.getElementById('aviso-nodos');
+            destino.innerHTML = `<p class="cargando">Ejecutando ${accion} en la sede ${sede}…</p>`;
+            try {
+                const r = await Sesion.pedir(`/api/v1/plataforma/nodos/${sede}/${accion}`, { method: 'POST' });
+                destino.innerHTML = r.ejecutado
+                    ? `<div class="aviso bien">Nodo ${Fmt.escapar(r.nodo)}: ${Fmt.escapar(accion)} ejecutado. Vuelva a cargar el tablero.</div>`
+                    : `<div class="aviso parcial">No se pudo desde la API. Ejecute en el host:
+                       <code>${Fmt.escapar(r.comando_equivalente)}</code></div>`;
+                setTimeout(cargarEstado, 1500);
+            } catch (error) {
+                destino.innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+            }
+        }
+
+        document.querySelectorAll('[data-migrar]').forEach((boton) => boton.addEventListener('click', async () => {
+            const sede = boton.dataset.migrar;
+            const destino = document.getElementById('aviso-migrar');
+            destino.innerHTML = `<p class="cargando">Normalizando la sede ${sede} a FHIR…</p>`;
+            try {
+                const r = await Sesion.pedir(`/api/v1/bus/migrar?sede=${sede}`, { method: 'POST' });
+                destino.innerHTML = `<div class="aviso bien">Sede ${sede}: ${JSON.stringify(r.resumen)}.
+                    La cobertura FHIR se actualizó.</div>`;
+                cargarEstado();
+            } catch (error) {
+                destino.innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+            }
+        }));
+
+        document.getElementById('btn-explain').addEventListener('click', async () => {
+            const destino = document.getElementById('evidencias');
+            destino.classList.remove('oculto');
+            destino.textContent = 'Consultando…';
+            try {
+                const documento = document.getElementById('documento').value.trim() || '1001';
+                const r = await Sesion.pedir(`/api/v1/datos/explain?documento=${encodeURIComponent(documento)}`);
+                destino.textContent = JSON.stringify(r, null, 2);
+            } catch (error) { destino.textContent = error.message; }
+        });
+
+        document.getElementById('btn-acid').addEventListener('click', async () => {
+            const destino = document.getElementById('evidencias');
+            destino.classList.remove('oculto');
+            destino.textContent = 'Ejecutando la transacción…';
+            try {
+                const r = await Sesion.pedir('/api/v1/datos/prueba-acid?sede=1', { method: 'POST' });
+                destino.textContent = JSON.stringify(r, null, 2);
+            } catch (error) { destino.textContent = error.message; }
+        });
+
+        /* ── Mensajes del bus ─────────────────────────────────────────── */
+        document.getElementById('btn-refrescar-bus').addEventListener('click', cargarMensajes);
+        document.getElementById('filtro-estado').addEventListener('change', cargarMensajes);
+
+        async function cargarMensajes() {
+            const cuerpo = document.getElementById('mensajes');
+            const estado = document.getElementById('filtro-estado').value;
+            cuerpo.innerHTML = '<tr><td colspan="10" class="cargando">Cargando…</td></tr>';
+            try {
+                const r = await Sesion.pedir('/api/v1/bus/mensajes?limite=100' + (estado ? `&estado=${estado}` : ''));
+                cuerpo.innerHTML = r.mensajes.length ? r.mensajes.map((m) => {
+                    const clase = { entregado: 'ok', rechazado: 'mal', muerto: 'mal', reintentando: 'alerta' }[m.estado] || 'info';
+                    const detalle = (m.motivos && m.motivos.length)
+                        ? `<ul>${m.motivos.map((x) => `<li>${Fmt.escapar(x)}</li>`).join('')}</ul>`
+                        : `<code>${Fmt.escapar((m.recursos || []).join(', '))}</code>`;
+                    const reencolar = (m.estado === 'muerto' && Sesion.puede('bus:enviar'))
+                        ? `<button type="button" class="secundario" data-reencolar="${m.mensaje_id}">Reencolar</button>` : '';
+                    return `<tr>
+                        <td>${m.mensaje_id}</td><td>${Fmt.escapar(Fmt.texto(m.formato))}</td>
+                        <td>${Fmt.escapar(Fmt.texto(m.tipo))}</td><td>${Fmt.texto(m.sede_id)}</td>
+                        <td>${Fmt.escapar(Fmt.texto(m.documento))}</td>
+                        <td><span class="insignia ${clase}">${Fmt.escapar(m.estado)}</span></td>
+                        <td>${m.intentos}/${m.max_intentos}</td>
+                        <td>${Fmt.texto(m.latencia_ms)}</td>
+                        <td>${detalle}</td><td>${reencolar}</td></tr>`;
+                }).join('') : '<tr><td colspan="10" class="sub">Todavía no hay mensajes. Envíe los archivos de ejemplos/.</td></tr>';
+
+                document.querySelectorAll('[data-reencolar]').forEach((boton) =>
+                    boton.addEventListener('click', async () => {
+                        boton.disabled = true;
+                        try {
+                            await Sesion.pedir(`/api/v1/bus/mensajes/${boton.dataset.reencolar}/reencolar`, { method: 'POST' });
+                        } catch (error) { alert(error.message); }
+                        cargarMensajes();
+                    }));
+            } catch (error) {
+                cuerpo.innerHTML = `<tr><td colspan="10"><div class="aviso error">${Fmt.escapar(error.message)}</div></td></tr>`;
+            }
+        }
+
+        /* ── Auditoría ────────────────────────────────────────────────── */
+        document.getElementById('btn-verificar').addEventListener('click', async () => {
+            const destino = document.getElementById('resultado-verificacion');
+            destino.innerHTML = '<p class="cargando">Recorriendo la cadena…</p>';
+            try {
+                const r = await Sesion.pedir('/api/v1/auditoria/verificar');
+                destino.innerHTML = r.integra
+                    ? `<div class="aviso bien"><strong>Cadena íntegra.</strong> ${r.total_eventos} eventos verificados.
+                       <p class="sello" style="margin-top:8px">Hash de cabeza: ${Fmt.escapar(r.hash_cabeza)}</p></div>`
+                    : `<div class="aviso error" role="alert"><strong>Cadena alterada.</strong>
+                       Primer evento afectado: <b>#${r.evento_alterado}</b>.<br>${Fmt.escapar(r.motivo)}
+                       <p class="sello" style="margin-top:8px">esperado: ${Fmt.escapar(r.hash_esperado)}<br>
+                          encontrado: ${Fmt.escapar(r.hash_encontrado)}</p></div>`;
+            } catch (error) {
+                destino.innerHTML = `<div class="aviso error">${Fmt.escapar(error.message)}</div>`;
+            }
+        });
+
+        async function cargarEventos() {
+            const cuerpo = document.getElementById('eventos');
+            if (!Sesion.puede('auditoria:leer')) {
+                document.getElementById('tarjeta-eventos').innerHTML =
+                    '<h2>Últimos eventos</h2><p class="sub">Solo el rol auditor puede leer la auditoría completa.</p>';
+                return;
+            }
+            try {
+                const r = await Sesion.pedir('/api/v1/auditoria?limite=60');
+                cuerpo.innerHTML = r.eventos.map((e) => `<tr>
+                    <td>${e.evento_id}</td><td>${Fmt.fecha(e.ts)}</td>
+                    <td>${Fmt.escapar(e.actor)}</td><td>${Fmt.escapar(Fmt.texto(e.rol))}</td>
+                    <td>${Fmt.escapar(e.accion)}</td><td>${Fmt.escapar(Fmt.texto(e.recurso))}</td>
+                    <td><span class="insignia ${e.resultado === 'denegado' || e.resultado === 'error' ? 'mal' : 'ok'}">${Fmt.escapar(e.resultado)}</span></td>
+                    <td><code>${Fmt.escapar(e.hash.slice(0, 16))}…</code></td></tr>`).join('');
+            } catch (error) {
+                cuerpo.innerHTML = `<tr><td colspan="8"><div class="aviso error">${Fmt.escapar(error.message)}</div></td></tr>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

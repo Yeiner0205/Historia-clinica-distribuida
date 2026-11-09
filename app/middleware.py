@@ -1,31 +1,40 @@
+"""
+app/middleware.py — Middleware de coordinación heredado del repositorio de
+referencia: ejecuta una consulta en los tres nodos y reparte las escrituras.
+
+Se conserva (el tablero de nodos lo usa) pero ahora toma la configuración de
+`comun/sedes.py`, y la escritura acepta la sede explícita: el enrutamiento por
+rango de documento queda como regla de respaldo.
+"""
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import os
 
-# Configuración de los nodos
-# Usar nombres de contenedores cuando se ejecuta en Docker, localhost cuando se ejecuta localmente
-USE_DOCKER_NAMES = os.getenv("USE_DOCKER_NAMES", "false").lower() == "true"
+from comun import sedes
 
-if USE_DOCKER_NAMES:
-    NODOS = [
-        {"host": "pg_nodo1", "port": 5432, "user": "admin", "password": "admin", "dbname": "historia_clinica"},
-        {"host": "pg_nodo2", "port": 5432, "user": "admin", "password": "admin", "dbname": "historia_clinica"},
-        {"host": "pg_nodo3", "port": 5432, "user": "admin", "password": "admin", "dbname": "historia_clinica"},
-    ]
-else:
-    NODOS = [
-        {"host": "localhost", "port": 5433, "user": "admin", "password": "admin", "dbname": "historia_clinica"},
-        {"host": "localhost", "port": 5434, "user": "admin", "password": "admin", "dbname": "historia_clinica"},
-        {"host": "localhost", "port": 5435, "user": "admin", "password": "admin", "dbname": "historia_clinica"},
-    ]
+NODOS = [
+    {
+        "host": s["host"],
+        "port": s["port"],
+        "user": s["user"],
+        "password": s["password"],
+        "dbname": s["dbname"],
+        "sede_id": s["sede_id"],
+        "sede": s["nombre"],
+    }
+    for s in sedes.SEDES
+]
+
+USE_DOCKER_NAMES = sedes.USE_DOCKER_NAMES
+
 
 def ejecutar_query_en_todos_los_nodos(query):
     resultados = []
     nodos_estado = []
     
     for nodo in NODOS:
-        nodo_info = {"nodo": f"nodo_{nodo['port']}", "estado": "DOWN", "error": None}
+        nodo_info = {"nodo": f"nodo_{nodo['sede_id']}", "sede": nodo["sede"],
+                     "estado": "DOWN", "error": None}
         try:
             conn = psycopg2.connect(
                 host=nodo["host"],
@@ -49,24 +58,25 @@ def ejecutar_query_en_todos_los_nodos(query):
     return {"resultados": resultados, "nodos_estado": nodos_estado}
 
 
-def insertar_registro_firh(tabla, datos):
+def insertar_registro_firh(tabla, datos, sede_id=None):
     """
-    Inserta un registro en la tabla especificada en el nodo correcto
-    basado en el documento_id (fragmentación horizontal)
+    Inserta un registro en la tabla indicada, en el nodo de la sede.
+
+    Si no se declara sede, se aplica la fragmentación horizontal por rango de
+    documento del repositorio de referencia.
     """
     if "documento_id" not in datos:
         raise ValueError("documento_id es requerido para enrutar el registro")
-    
+
     documento_id = int(datos["documento_id"])
-    
-    # Determinar el nodo según el rango de documento_id
-    if documento_id < 4000000000:
-        nodo_idx = 0  # Nodo 1
-    elif documento_id < 7000000000:
-        nodo_idx = 1  # Nodo 2
+
+    if sede_id:
+        nodo_idx = int(sede_id) - 1
+        if not 0 <= nodo_idx <= 2:
+            raise ValueError(f"sede desconocida: {sede_id}")
     else:
-        nodo_idx = 2  # Nodo 3
-    
+        nodo_idx = sedes.nodo_por_documento(documento_id)["sede_id"] - 1
+
     nodo = NODOS[nodo_idx]
     
     # Construir la consulta INSERT
@@ -92,7 +102,8 @@ def insertar_registro_firh(tabla, datos):
         return {
             "success": True,
             "message": f"Registro insertado en {tabla} en nodo {nodo_idx + 1}",
-            "nodo": f"nodo_{nodo['port']}",
+            "nodo": f"nodo_{nodo['sede_id']}",
+            "sede": nodo["sede"],
             "documento_id": documento_id
         }
     except Exception as e:
@@ -101,6 +112,8 @@ def insertar_registro_firh(tabla, datos):
 
 if __name__ == "__main__":
     consulta = "SELECT documento_id, nombre_completo, edad FROM usuario;"
-    resultados = ejecutar_query_en_todos_los_nodos(consulta)
-    for fila in resultados:
+    salida = ejecutar_query_en_todos_los_nodos(consulta)
+    for fila in salida["resultados"]:
         print(fila)
+    for nodo in salida["nodos_estado"]:
+        print(nodo)

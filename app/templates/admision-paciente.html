@@ -629,6 +629,16 @@
             filter: brightness(1.25);
         }
     </style>
+    <!-- Sesión por rol: el token viaja en cada llamada a la API y el servidor
+         verifica los permisos. Si el rol no corresponde, la vista no se abre. -->
+    <script src="/static/sesion.js"></script>
+    <script>
+        Sesion.interceptarFetch();
+        const USUARIO_SESION = Sesion.exigir(['admisionista']);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (USUARIO_SESION) Sesion.insertarCabeceraSesion('Admisión y triage');
+        });
+    </script>
 </head>
 
 <body>

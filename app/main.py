@@ -1,33 +1,76 @@
-# app.py - Sistema de Historia Clínica Distribuida con FHIR
-from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+# app/main.py — API y vistas de la plataforma distribuida de interoperabilidad
+# clínica. Puerto 8001.
+#
+# Sirve las cuatro vistas por rol (Paciente, Admisionista, Médico y Reporte de
+# HC), la consulta unificada de las tres sedes y los endpoints de seguridad,
+# auditoría y observabilidad. Ninguna vista habla directo con las bases de las
+# sedes: todo pasa por esta API y por el HSB.
+import logging
 import os
 import sys
-import middleware
+import time
+
+# Permite ejecutar tanto `uvicorn app.main:app` desde la raíz como
+# `python app/main.py` desde la carpeta app/.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if RAIZ not in sys.path:
+    sys.path.insert(0, RAIZ)
+
+import httpx
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from typing import Any, Dict, List, Optional
+
+from app import auth, consulta_unificada, reporte
+from app.fhir_app.models.patient_model import PatientIdentificationData
+from app.fhir_app.services.db_service import DBService
+from app.fhir_app.services.fhir_service import FHIRService
+from comun import auditoria, db, seguridad, sedes
+from fhir import cliente_hapi, normalizador, terminologia
+from fhir.transformador import FHIRTransformer
+
+import app.middleware as middleware
 import psycopg2
 from fastapi_mcp import FastApiMCP
 
-# Agregar backend al path para imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
-
-from fhir_app.models.patient_model import PatientIdentificationData
-from fhir_app.transformers.fhir_transformer import FHIRTransformer
-from fhir_app.services.fhir_service import FHIRService
-from fhir_app.services.db_service import DBService
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s %(levelname)-7s [api] %(message)s",
+)
+logger = logging.getLogger("api")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PLANTILLAS = os.path.join(BASE_DIR, "templates")
+
+
+def plantilla(nombre: str) -> str:
+    """Lee una plantilla HTML de app/templates."""
+    ruta = os.path.join(PLANTILLAS, nombre)
+    if not os.path.isfile(ruta):
+        raise HTTPException(status_code=404, detail=f"Plantilla {nombre} no encontrada")
+    with open(ruta, "r", encoding="utf-8") as fh:
+        return fh.read()
+
 
 # Cargar HTML de FIRH al iniciar
 FIRH_HTML = None
-_firh_path = os.path.join(BASE_DIR, "templates", "firh.html")
+_firh_path = os.path.join(PLANTILLAS, "firh.html")
 if os.path.isfile(_firh_path):
     with open(_firh_path, "r", encoding="utf-8") as _f:
         FIRH_HTML = _f.read()
 
-app = FastAPI()
+app = FastAPI(
+    title="Plataforma distribuida de interoperabilidad clínica",
+    version="1.0.0",
+    description=(
+        "API y vistas por rol sobre tres sedes (Sincelejo, Cartagena y Corozal) "
+        "con normalización a FHIR R4, bus de integración HSB, seguridad por rol "
+        "y auditoría encadenada por hash."
+    ),
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,24 +80,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configuración de nodos (usar nombres de contenedores en Docker)
-USE_DOCKER_NAMES = os.getenv("USE_DOCKER_NAMES", "false").lower() == "true"
-
-if USE_DOCKER_NAMES:
-    NODES_CONFIG = [
-        {"id": "pg_nodo1", "host": "pg_nodo1", "port": 5432, "display_port": "5433"},
-        {"id": "pg_nodo2", "host": "pg_nodo2", "port": 5432, "display_port": "5434"},
-        {"id": "pg_nodo3", "host": "pg_nodo3", "port": 5432, "display_port": "5435"},
-    ]
-else:
-    NODES_CONFIG = [
-        {"id": "pg_nodo1", "host": "localhost", "port": 5433, "display_port": "5433"},
-        {"id": "pg_nodo2", "host": "localhost", "port": 5434, "display_port": "5434"},
-        {"id": "pg_nodo3", "host": "localhost", "port": 5435, "display_port": "5435"},
-    ]
+# ── Observabilidad: contadores que alimentan /metrics ───────────────────────
+_INICIO = time.time()
+_CONTADORES: Dict[str, float] = {
+    "peticiones": 0,
+    "errores": 0,
+    "denegados": 0,
+    "latencia_total_ms": 0.0,
+}
 
 
-from fastapi.responses import HTMLResponse, RedirectResponse
+@app.middleware("http")
+async def medir_peticiones(request: Request, call_next):
+    """Cuenta peticiones, errores, accesos denegados y latencia."""
+    comienzo = time.perf_counter()
+    try:
+        respuesta = await call_next(request)
+    except Exception:
+        _CONTADORES["peticiones"] += 1
+        _CONTADORES["errores"] += 1
+        raise
+    transcurrido = (time.perf_counter() - comienzo) * 1000
+    _CONTADORES["peticiones"] += 1
+    _CONTADORES["latencia_total_ms"] += transcurrido
+    if respuesta.status_code in (401, 403):
+        _CONTADORES["denegados"] += 1
+    elif respuesta.status_code >= 500:
+        _CONTADORES["errores"] += 1
+    respuesta.headers["X-Tiempo-Respuesta-ms"] = f"{transcurrido:.1f}"
+    return respuesta
+
+# Configuración de nodos: una entrada por sede, desde comun/sedes.py
+USE_DOCKER_NAMES = sedes.USE_DOCKER_NAMES
+NODES_CONFIG = [
+    {
+        "id": s["nodo"],
+        "sede_id": s["sede_id"],
+        "sede": s["nombre"],
+        "host": s["host"],
+        "port": s["port"],
+        "display_port": str(s["puerto_host"]),
+    }
+    for s in sedes.SEDES
+]
 
 
 @app.get("/", response_class=RedirectResponse)
@@ -66,16 +134,14 @@ async def root_redirect():
 @app.get("/home/", response_class=HTMLResponse)
 async def home_page():
     """Pantalla de inicio — hub de navegación entre módulos"""
-    with open(os.path.join(BASE_DIR, "templates", "home.html"), "r", encoding="utf-8") as f:
-        return f.read()
+    return plantilla("home.html")
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
 @app.get("/dashboard/", response_class=HTMLResponse)
 async def dashboard_page():
     """Nodes Monitor — estado de los nodos PostgreSQL y simulador de queries"""
-    with open(os.path.join(BASE_DIR, "templates", "index.html"), "r", encoding="utf-8") as f:
-        return f.read()
+    return plantilla("index.html")
 
 
 @app.get("/api/health")
@@ -171,15 +237,12 @@ db_service = DBService()
 @app.get("/admision/", response_class=HTMLResponse)
 async def admision_page():
     """Vista de admisión: verifica si el paciente existe antes de registrarlo"""
-    try:
-        with open(os.path.join(BASE_DIR, "templates", "admision-paciente.html"), "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Plantilla admision-paciente.html no encontrada")
+    return plantilla("admision-paciente.html")
 
 
 @app.get("/api/v1/admision/verificar/{documento_id}")
-async def verificar_paciente(documento_id: str):
+async def verificar_paciente(documento_id: str,
+                             claims: dict = Depends(auth.requiere("paciente:buscar"))):
     """
     Punto de entrada principal del flujo de admisión.
 
@@ -227,19 +290,33 @@ async def verificar_paciente(documento_id: str):
     except Exception as e:
         resultado["error_fhir"] = str(e)
 
-    # 3. Determinar nodo asignado
-    if doc_id_int < 4_000_000_000:
-        resultado["nodo_asignado"] = "nodo1 (doc < 4.000.000.000)"
-    elif doc_id_int < 7_000_000_000:
-        resultado["nodo_asignado"] = "nodo2 (4B – 7B)"
-    else:
-        resultado["nodo_asignado"] = "nodo3 (doc ≥ 7.000.000.000)"
+    # 3. ¿En qué sedes existe? (detección de duplicados entre sedes)
+    try:
+        entre_sedes = DBService.buscar_en_todas_las_sedes(doc_id_int)
+        resultado["sedes_con_registro"] = entre_sedes["sedes_con_registro"]
+        resultado["duplicado_entre_sedes"] = len(entre_sedes["sedes_con_registro"]) > 1
+        resultado["sedes_no_disponibles"] = entre_sedes["sedes_no_disponibles"]
+        resultado["parcial"] = entre_sedes["parcial"]
+    except Exception as exc:  # noqa: BLE001
+        resultado["error_sedes"] = str(exc)
 
-    return resultado
+    # 4. Sede en la que se admitiría (la del admisionista) y nodo de respaldo
+    sede_sesion = claims.get("sede_id")
+    resultado["sede_admision"] = sede_sesion
+    resultado["nodo_asignado"] = (
+        f"sede {sede_sesion} ({sedes.sede(sede_sesion)['nombre']})" if sede_sesion
+        else f"{sedes.nodo_por_documento(doc_id_int)['nodo']} por rango de documento"
+    )
+
+    auth.registrar_acceso(claims, "verificar_paciente", f"documento:{documento_id}", "ok",
+                          {"encontrado_local": resultado["encontrado_local"],
+                           "encontrado_fhir": resultado["encontrado_fhir"]})
+    return consulta_unificada.serializable(resultado)
 
 
 @app.post("/api/v1/admision/registrar")
-async def registrar_admision(data: PatientIdentificationData):
+async def registrar_admision(data: PatientIdentificationData, sede: Optional[int] = None,
+                             claims: dict = Depends(auth.requiere("paciente:registrar"))):
     """
     Registra un paciente nuevo en el sistema de forma dual:
     1. Crea el recurso FHIR Patient en HAPI FHIR (estándar HL7 R4)
@@ -250,6 +327,8 @@ async def registrar_admision(data: PatientIdentificationData):
     """
     data_dict = data.dict()
     doc_id = int(data_dict["numeroDocumento"])
+    # El paciente se admite en la sede del admisionista (o en la que indique).
+    sede_destino = sede or claims.get("sede_id")
 
     # 1. Verificar si ya existe localmente
     existente_local = None
@@ -278,19 +357,28 @@ async def registrar_admision(data: PatientIdentificationData):
         # FHIR no disponible — continuar solo con DB local
         fhir_result = {"error": str(e), "nota": "HAPI FHIR no disponible, registrado solo en DB local"}
 
-    # 3. Persistir en DB local
+    # 3. Persistir en la sede
     try:
-        db_resultado = DBService.insertar_paciente(data_dict, fhir_patient_id=fhir_id)
+        db_resultado = DBService.insertar_paciente(data_dict, fhir_patient_id=fhir_id,
+                                                   sede_id=sede_destino)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en DB local: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error en la base de la sede: {str(e)}")
+
+    sello = auth.registrar_acceso(
+        claims, "registrar_paciente", f"documento:{doc_id}", "ok",
+        {"accion": db_resultado["accion"], "nodo": db_resultado["nodo"],
+         "sede_id": sede_destino, "fhir_patient_id": fhir_id},
+    )
 
     return {
         "success": True,
         "accion": db_resultado["accion"],
         "nodo": db_resultado["nodo"],
+        "sede_id": sede_destino,
         "fhir_patient_id": fhir_id,
-        "paciente_local": db_resultado["paciente"],
+        "paciente_local": consulta_unificada.serializable(db_resultado["paciente"]),
         "fhir_resource": fhir_result,
+        "sello_auditoria": (sello or {}).get("hash"),
         "mensaje": (
             f"Paciente {'encontrado' if db_resultado['accion'] == 'existente' else 'creado'} "
             f"en {db_resultado['nodo']} con FHIR ID: {fhir_id}"
@@ -299,7 +387,7 @@ async def registrar_admision(data: PatientIdentificationData):
 
 
 @app.get("/api/v1/admision/tablas/estado")
-async def estado_tablas_db():
+async def estado_tablas_db(claims: dict = Depends(auth.requiere("plataforma:estado"))):
     """
     Verifica si las tablas del esquema clínico existen en los 3 nodos.
     Útil para diagnóstico en la vista de admisión.
@@ -308,7 +396,7 @@ async def estado_tablas_db():
 
 
 @app.post("/api/v1/admision/tablas/inicializar")
-async def inicializar_tablas_db():
+async def inicializar_tablas_db(claims: dict = Depends(auth.requiere("plataforma:estado"))):
     """
     Crea las tablas (CREATE TABLE IF NOT EXISTS) en todos los nodos.
     Operación idempotente — segura de ejecutar múltiples veces.
@@ -320,7 +408,8 @@ async def inicializar_tablas_db():
 @app.get("/api/v1/admision/buscar")
 async def buscar_pacientes(
     nombre: str = "",
-    documento: str = ""
+    documento: str = "",
+    claims: dict = Depends(auth.requiere("paciente:buscar")),
 ):
     """
     Búsqueda unificada de pacientes:
@@ -378,11 +467,7 @@ async def buscar_pacientes(
 @app.get("/registro-paciente/", response_class=HTMLResponse)
 async def registro_paciente_page():
     """Sirve el formulario de registro de paciente"""
-    try:
-        with open(os.path.join(BASE_DIR, "templates", "registro-paciente.html"), "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Formulario no encontrado")
+    return plantilla("registro-paciente.html")
 
 
 @app.post("/api/v1/fhir/patient")
@@ -472,11 +557,7 @@ async def fhir_server_health():
 @app.get("/consulta-hc/", response_class=HTMLResponse)
 async def consulta_hc_page():
     """Sirve la página de consulta de historias clínicas"""
-    try:
-        with open(os.path.join(BASE_DIR, "templates", "consulta-hc.html"), "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Página de consulta no encontrada")
+    return plantilla("consulta-hc.html")
 
 
 @app.get("/api/v1/fhir/patients")
@@ -801,15 +882,12 @@ async def firh_cargar(body: FirhCargarBody):
 @app.get("/medico/", response_class=HTMLResponse)
 async def medico_page():
     """Dashboard del médico: búsqueda, historia clínica, atención, diagnóstico y prescripción"""
-    try:
-        with open(os.path.join(BASE_DIR, "templates", "medico.html"), "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Módulo médico no encontrado")
+    return plantilla("medico.html")
 
 
 class AtencionRequest(BaseModel):
     documento_id: int
+    sede_id: Optional[int] = None
     entidad_salud: str = ""
     fecha_ingreso: str
     modalidad_entrega: str = ""
@@ -822,6 +900,7 @@ class AtencionRequest(BaseModel):
 
 class DiagnosticoRequest(BaseModel):
     documento_id: int
+    sede_id: Optional[int] = None
     atencion_id: int
     tipo_diagnostico_ingreso: str = None
     diagnostico_ingreso: str = None
@@ -834,6 +913,7 @@ class DiagnosticoRequest(BaseModel):
 
 class MedicamentoItem(BaseModel):
     documento_id: int
+    sede_id: Optional[int] = None
     atencion_id: int
     tecnologia_id: str = None
     descripcion_medicamento: str = None
@@ -848,25 +928,22 @@ class PrescripcionRequest(BaseModel):
     medicamentos: list[MedicamentoItem]
 
 
-def _conectar_nodo(doc_id: int):
-    """Retorna una conexión psycopg2 al nodo correcto según doc_id."""
-    USE_DOCKER = os.getenv("USE_DOCKER_NAMES", "false").lower() == "true"
-    if doc_id < 4_000_000_000:
-        host, port = ("pg_nodo1", 5432) if USE_DOCKER else ("localhost", 5433)
-        nodo_name = "nodo1 (pg_nodo1)"
-    elif doc_id < 7_000_000_000:
-        host, port = ("pg_nodo2", 5432) if USE_DOCKER else ("localhost", 5434)
-        nodo_name = "nodo2 (pg_nodo2)"
-    else:
-        host, port = ("pg_nodo3", 5432) if USE_DOCKER else ("localhost", 5435)
-        nodo_name = "nodo3 (pg_nodo3)"
-    conn = psycopg2.connect(host=host, port=port, user="admin", password="admin",
-                            dbname="historia_clinica", connect_timeout=5)
-    return conn, nodo_name
+def _conectar_nodo(doc_id: int, sede_id: Optional[int] = None):
+    """
+    Conexión al nodo donde debe escribirse.
+
+    Con `sede_id` se escribe en la sede donde ocurre la atención (es el caso
+    normal: el médico atiende en una sede). Sin sede, se aplica la
+    fragmentación por rango de documento del repositorio de referencia.
+    """
+    sede = sedes.sede(sede_id) if sede_id else sedes.nodo_por_documento(doc_id)
+    conn = db.conectar(sede, timeout=5)
+    return conn, f"nodo{sede['sede_id']} ({sede['nodo']} · {sede['nombre']})"
 
 
 @app.get("/api/v1/medico/historia/{documento_id}")
-async def historia_clinica(documento_id: int):
+async def historia_clinica(documento_id: int,
+                           claims: dict = Depends(auth.requiere("historia:otros"))):
     """
     Retorna la historia clínica completa de un paciente desde la DB distribuida:
     atenciones, diagnósticos y medicamentos.
@@ -925,10 +1002,11 @@ async def historia_clinica(documento_id: int):
 
 
 @app.post("/api/v1/medico/atencion")
-async def registrar_atencion(data: AtencionRequest):
+async def registrar_atencion(data: AtencionRequest,
+                             claims: dict = Depends(auth.requiere("atencion:abrir"))):
     """Registra una nueva atención en el nodo distribuido correcto."""
     try:
-        conn, nodo = _conectar_nodo(data.documento_id)
+        conn, nodo = _conectar_nodo(data.documento_id, data.sede_id)
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO atencion
@@ -950,16 +1028,21 @@ async def registrar_atencion(data: AtencionRequest):
             atencion_id = cur.fetchone()[0]
             conn.commit()
         conn.close()
-        return {"success": True, "atencion_id": atencion_id, "nodo": nodo}
+        sello = auth.registrar_acceso(claims, "abrir_atencion", f"documento:{data.documento_id}", "ok",
+                                      {"atencion_id": atencion_id, "nodo": nodo,
+                                       "triage": data.clasificacion_triage})
+        return {"success": True, "atencion_id": atencion_id, "nodo": nodo,
+                "sello_auditoria": (sello or {}).get("hash")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error registrando atención: {str(e)}")
 
 
 @app.post("/api/v1/medico/diagnostico")
-async def registrar_diagnostico(data: DiagnosticoRequest):
+async def registrar_diagnostico(data: DiagnosticoRequest,
+                                claims: dict = Depends(auth.requiere("clinico:escribir"))):
     """Guarda un diagnóstico vinculado a una atención en el nodo correcto."""
     try:
-        conn, nodo = _conectar_nodo(data.documento_id)
+        conn, nodo = _conectar_nodo(data.documento_id, data.sede_id)
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO diagnostico
@@ -981,19 +1064,25 @@ async def registrar_diagnostico(data: DiagnosticoRequest):
             dx_id = cur.fetchone()[0]
             conn.commit()
         conn.close()
-        return {"success": True, "diagnostico_id": dx_id, "nodo": nodo}
+        sello = auth.registrar_acceso(claims, "registrar_diagnostico",
+                                      f"documento:{data.documento_id}", "ok",
+                                      {"diagnostico_id": dx_id, "atencion_id": data.atencion_id,
+                                       "nodo": nodo})
+        return {"success": True, "diagnostico_id": dx_id, "nodo": nodo,
+                "sello_auditoria": (sello or {}).get("hash")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error guardando diagnóstico: {str(e)}")
 
 
 @app.post("/api/v1/medico/prescripcion")
-async def guardar_prescripcion(body: PrescripcionRequest):
+async def guardar_prescripcion(body: PrescripcionRequest,
+                               claims: dict = Depends(auth.requiere("clinico:escribir"))):
     """Guarda uno o más medicamentos (tecnologia_salud) en el nodo correcto."""
     if not body.medicamentos:
         raise HTTPException(status_code=400, detail="Sin medicamentos")
     doc_id = body.medicamentos[0].documento_id
     try:
-        conn, nodo = _conectar_nodo(doc_id)
+        conn, nodo = _conectar_nodo(doc_id, body.medicamentos[0].sede_id)
         inserted = 0
         with conn.cursor() as cur:
             for m in body.medicamentos:
@@ -1011,16 +1100,84 @@ async def guardar_prescripcion(body: PrescripcionRequest):
                 inserted += 1
             conn.commit()
         conn.close()
-        return {"success": True, "total": inserted, "nodo": nodo}
+        sello = auth.registrar_acceso(claims, "formular_tecnologias", f"documento:{doc_id}", "ok",
+                                      {"total": inserted, "nodo": nodo})
+        return {"success": True, "total": inserted, "nodo": nodo,
+                "sello_auditoria": (sello or {}).get("hash")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error guardando prescripción: {str(e)}")
+
+
+class EgresoRequest(BaseModel):
+    documento_id: int
+    sede_id: Optional[int] = None
+    atencion_id: int
+    fecha_salida: Optional[str] = None
+    condicion_salida: Optional[str] = None
+    diagnostico_muerte: Optional[str] = None
+    codigo_prestador: Optional[str] = None
+    tipo_incapacidad: Optional[str] = None
+    dias_incapacidad: Optional[int] = None
+    dias_lic_maternidad: Optional[int] = None
+    alergias: Optional[str] = None
+    antecedente_familiar: Optional[str] = None
+    riesgos_ocupacionales: Optional[str] = None
+    responsable_egreso: Optional[str] = None
+
+
+@app.post("/api/v1/medico/egreso", tags=["medico"],
+          summary="Registra el egreso de una atención, con sello de integridad")
+async def registrar_egreso(data: EgresoRequest,
+                           claims: dict = Depends(auth.requiere("clinico:escribir"))):
+    """
+    El egreso cierra la atención. La respuesta trae el sello: el hash del
+    evento de auditoría, que además queda guardado en la fila del egreso.
+    """
+    # El sello se calcula antes de escribir y se guarda con el egreso: así la
+    # fila queda atada al evento de la cadena.
+    sello = auth.registrar_acceso(
+        claims, "registrar_egreso", f"documento:{data.documento_id}", "ok",
+        {"atencion_id": data.atencion_id, "condicion_salida": data.condicion_salida,
+         "sede_id": data.sede_id},
+    )
+    hash_evento = (sello or {}).get("hash")
+
+    try:
+        conn, nodo = _conectar_nodo(data.documento_id, data.sede_id)
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO egreso
+                  (atencion_id, fecha_salida, condicion_salida, diagnostico_muerte,
+                   codigo_prestador, tipo_incapacidad, dias_incapacidad, dias_lic_maternidad,
+                   alergias, antecedente_familiar, riesgos_ocupacionales, responsable_egreso,
+                   sello_integridad)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING egreso_id;
+                """,
+                (
+                    data.atencion_id, data.fecha_salida, data.condicion_salida,
+                    data.diagnostico_muerte, data.codigo_prestador, data.tipo_incapacidad,
+                    data.dias_incapacidad, data.dias_lic_maternidad, data.alergias,
+                    data.antecedente_familiar, data.riesgos_ocupacionales,
+                    data.responsable_egreso or claims.get("nombre"), hash_evento,
+                ),
+            )
+            egreso_id = cur.fetchone()[0]
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error registrando egreso: {str(e)}")
+
+    return {"success": True, "egreso_id": egreso_id, "nodo": nodo,
+            "sello_auditoria": hash_evento}
 
 
 # ============================================================================
 # ENDPOINTS DE GESTIÓN DE PROFESIONALES DE SALUD (MÉDICOS)
 # ============================================================================
 
-from fhir_app.models.patient_model import ProfesionalSaludData, ProfesionalSaludUpdate
+from app.fhir_app.models.patient_model import ProfesionalSaludData, ProfesionalSaludUpdate
 
 
 @app.get("/api/v1/profesionales")
@@ -1134,6 +1291,722 @@ async def buscar_profesionales(nombre: str, limite: int = 20):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error buscando profesionales: {str(e)}")
+
+
+# ============================================================================
+# SEGURIDAD — autenticación con token y matriz de permisos (RF5, Fase 4)
+# ============================================================================
+
+class LoginBody(BaseModel):
+    usuario: str
+    password: str
+
+
+@app.post("/auth/login", tags=["seguridad"], summary="Inicia sesión y entrega un token JWT")
+async def login(body: LoginBody):
+    registro = seguridad.autenticar(body.usuario, body.password)
+    if registro is None:
+        auditoria.registrar(body.usuario, "", "login_denegado", "auth", "denegado",
+                            {"motivo": "usuario o clave incorrectos"})
+        raise HTTPException(status_code=401, detail="Usuario o clave incorrectos")
+
+    token = seguridad.emitir_token(body.usuario, registro)
+    sello = auditoria.registrar(body.usuario, registro["rol"], "login", "auth", "ok",
+                                {"sede_id": registro.get("sede_id")})
+    return {**token, "sello_auditoria": (sello or {}).get("hash")}
+
+
+@app.get("/auth/yo", tags=["seguridad"], summary="Quién soy y qué puedo hacer")
+async def quien_soy(claims: dict = Depends(auth.requiere_sesion)):
+    return {
+        "usuario": claims.get("sub"),
+        "nombre": claims.get("nombre"),
+        "rol": claims.get("rol"),
+        "documento": claims.get("documento"),
+        "sede_id": claims.get("sede_id"),
+        "permisos": claims.get("permisos", []),
+        "expira": claims.get("exp"),
+    }
+
+
+@app.get("/auth/matriz", tags=["seguridad"], summary="Matriz de permisos por rol")
+async def matriz_permisos():
+    """Tabla de la Fase 4, Paso 1: qué puede hacer cada rol. Sirve de evidencia
+    en el informe y la usan las vistas para ocultar lo que no corresponde."""
+    acciones = [
+        ("Ver su propia historia", "historia:propia"),
+        ("Ver la historia de otro paciente", "historia:otros"),
+        ("Buscar pacientes", "paciente:buscar"),
+        ("Registrar o admitir un paciente", "paciente:registrar"),
+        ("Abrir una atención", "atencion:abrir"),
+        ("Registrar diagnóstico, fórmula o egreso", "clinico:escribir"),
+        ("Ver diagnósticos y notas clínicas", "diagnostico:ver"),
+        ("Generar el Reporte de HC de otro paciente", "reporte:generar"),
+        ("Ver el estado de la plataforma", "plataforma:estado"),
+        ("Leer la auditoría completa", "auditoria:leer"),
+        ("Apagar o encender un nodo (demo)", "nodo:controlar"),
+        ("Enviar o reencolar mensajes del bus", "bus:enviar"),
+    ]
+    return {
+        "roles": list(seguridad.ROLES),
+        "matriz": [
+            {
+                "accion": etiqueta,
+                "permiso": permiso,
+                **{rol: seguridad.tiene_permiso(rol, permiso) for rol in seguridad.ROLES},
+            }
+            for etiqueta, permiso in acciones
+        ],
+        "permisos_por_rol": {rol: seguridad.permisos_de(rol) for rol in seguridad.ROLES},
+    }
+
+
+@app.get("/auth/usuarios-prueba", tags=["seguridad"], summary="Usuarios sintéticos de prueba")
+async def usuarios_prueba():
+    """Lista los usuarios de demostración (las claves están en el README y en
+    .env.example; nunca se guardan secretos reales en el repositorio)."""
+    return {
+        "aviso": "Usuarios sintéticos de demostración. Las claves se configuran por variables de entorno.",
+        "usuarios": [
+            {
+                "usuario": nombre,
+                "rol": datos["rol"],
+                "nombre": datos["nombre"],
+                "documento": datos.get("documento"),
+                "sede_id": datos.get("sede_id"),
+            }
+            for nombre, datos in seguridad.USUARIOS.items()
+        ],
+    }
+
+
+# ============================================================================
+# VISTAS POR ROL (HTML)
+# ============================================================================
+
+@app.get("/login", response_class=HTMLResponse, tags=["vistas"])
+@app.get("/login/", response_class=HTMLResponse, include_in_schema=False)
+async def vista_login():
+    """Pantalla de inicio de sesión común a las cuatro vistas."""
+    return plantilla("login.html")
+
+
+@app.get("/paciente", response_class=HTMLResponse, tags=["vistas"])
+@app.get("/paciente/", response_class=HTMLResponse, include_in_schema=False)
+async def vista_paciente():
+    """Vista Paciente: su historia unificada, su Bundle FHIR y quién accedió."""
+    return plantilla("paciente.html")
+
+
+@app.get("/reporte-hc", response_class=HTMLResponse, tags=["vistas"])
+@app.get("/reporte-hc/", response_class=HTMLResponse, include_in_schema=False)
+async def vista_reporte_hc():
+    """Vista Reporte de HC: reporte por sede, cobertura, sello y tablero."""
+    return plantilla("reporte-hc.html")
+
+
+# ============================================================================
+# CONSULTA UNIFICADA DE LAS TRES SEDES (RF4)
+# ============================================================================
+
+@app.get("/api/v1/historia/{documento_id}", tags=["historia"],
+         summary="Historia clínica unificada de un paciente en las 3 sedes")
+async def historia_unificada(documento_id: int, claims: dict = Depends(auth.requiere_sesion)):
+    """
+    Una sola consulta recorre las tres sedes en paralelo. Si una sede no
+    responde, la respuesta llega igual con las otras dos y marca `parcial`.
+    """
+    rol = claims.get("rol", "")
+    if not (seguridad.tiene_permiso(rol, "historia:otros") or seguridad.tiene_permiso(rol, "historia:propia")):
+        auth.registrar_acceso(claims, "acceso_denegado", f"paciente:{documento_id}", "denegado",
+                              {"motivo": "el rol no puede leer historias"})
+        raise HTTPException(status_code=403, detail=f"El rol '{rol}' no puede consultar historias clínicas")
+    auth.verificar_acceso_documento(claims, documento_id)
+
+    historia = consulta_unificada.historia_unificada(documento_id)
+
+    # El admisionista no ve contenido clínico (mínimo necesario).
+    if not seguridad.tiene_permiso(rol, "diagnostico:ver") and rol == seguridad.ROL_ADMISIONISTA:
+        historia = _ocultar_clinico(historia)
+
+    sello = auth.registrar_acceso(
+        claims, "leer_historia", f"paciente:{documento_id}", "ok",
+        {"sedes_disponibles": historia["sedes_disponibles"], "parcial": historia["parcial"]},
+    )
+    historia["sello_auditoria"] = (sello or {}).get("hash")
+    return historia
+
+
+def _ocultar_clinico(historia: dict) -> dict:
+    """Quita diagnósticos, laboratorio y fórmulas: lo que el admisionista no debe ver."""
+    for sede in historia.get("sedes", []):
+        for atencion in sede.get("atenciones", []):
+            atencion["diagnosticos"] = []
+            atencion["observaciones"] = []
+            atencion["medicamentos"] = []
+            atencion["egreso"] = None
+            atencion["oculto_por_rol"] = "El rol admisionista no ve contenido clínico"
+    for atencion in historia.get("atenciones", []):
+        atencion["diagnosticos"] = []
+        atencion["observaciones"] = []
+        atencion["medicamentos"] = []
+        atencion["egreso"] = None
+    historia["resumen"]["diagnosticos"] = None
+    historia["resumen"]["observaciones"] = None
+    historia["resumen"]["medicamentos"] = None
+    historia["nota_rol"] = "Vista de admisión: sin diagnósticos ni notas clínicas"
+    return historia
+
+
+@app.get("/api/v1/pacientes/buscar", tags=["historia"],
+         summary="Busca pacientes por nombre o documento en las 3 sedes")
+async def buscar_pacientes_unificado(nombre: str = "", documento: str = "",
+                                     claims: dict = Depends(auth.requiere("paciente:buscar"))):
+    if not nombre and not documento:
+        raise HTTPException(status_code=400, detail="Indique 'nombre' o 'documento'")
+
+    if documento:
+        try:
+            doc = int(documento)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="El documento debe ser numérico")
+        resultado = DBService.buscar_en_todas_las_sedes(doc)
+        auth.registrar_acceso(claims, "buscar_paciente", f"documento:{doc}", "ok",
+                              {"sedes": resultado["sedes_con_registro"]})
+        return {
+            "modo": "documento",
+            **consulta_unificada.serializable(resultado),
+            "duplicado_entre_sedes": len(resultado["sedes_con_registro"]) > 1,
+        }
+
+    resultado = consulta_unificada.buscar_por_nombre(nombre)
+    auth.registrar_acceso(claims, "buscar_paciente", f"nombre:{nombre}", "ok",
+                          {"encontrados": resultado["total"]})
+    return {"modo": "nombre", **resultado}
+
+
+@app.get("/api/v1/pacientes/{documento_id}/sedes", tags=["historia"],
+         summary="En qué sedes existe el paciente (detección de duplicados)")
+async def sedes_del_paciente(documento_id: int, claims: dict = Depends(auth.requiere("paciente:buscar"))):
+    resultado = DBService.buscar_en_todas_las_sedes(documento_id)
+    return {
+        **consulta_unificada.serializable(resultado),
+        "duplicado_entre_sedes": len(resultado["sedes_con_registro"]) > 1,
+        "regla_de_coincidencia": "documento exacto (identificador común de las 3 sedes)",
+    }
+
+
+# ============================================================================
+# EVIDENCIAS DE LA CAPA DE DATOS (Fase 2)
+# ============================================================================
+
+@app.get("/api/v1/datos/explain", tags=["datos"],
+         summary="EXPLAIN ANALYZE de la consulta distribuida por documento")
+async def explain_consulta(documento: int = Query(1001),
+                           claims: dict = Depends(auth.requiere("plataforma:estado"))):
+    return consulta_unificada.explicar_consulta(documento)
+
+
+@app.post("/api/v1/datos/prueba-acid", tags=["datos"],
+          summary="Transacción atómica: escribe y falla a la mitad")
+async def prueba_acid(sede: int = Query(1, ge=1, le=3),
+                      claims: dict = Depends(auth.requiere("plataforma:estado"))):
+    resultado = consulta_unificada.prueba_acid(sede)
+    auth.registrar_acceso(claims, "prueba_acid", f"sede:{sede}",
+                          "ok" if resultado["atomica"] else "error", resultado)
+    return resultado
+
+
+@app.get("/api/v1/datos/cobertura", tags=["datos"], summary="Cobertura FHIR por sede")
+async def cobertura_fhir():
+    """Pública: alimenta el tablero y la demostración de 0 % → 100 %."""
+    cobertura = db.cobertura_fhir_por_sede()
+    total = sum(c["total"] for c in cobertura if c["disponible"])
+    migrados = sum(c["migrados"] for c in cobertura if c["disponible"])
+    return {
+        "por_sede": cobertura,
+        "global": {
+            "total": total,
+            "migrados": migrados,
+            "cobertura_pct": round(100.0 * migrados / total, 1) if total else 0.0,
+        },
+    }
+
+
+# ============================================================================
+# REPORTE DE HC (cuarta vista)
+# ============================================================================
+
+def _reporte_para(documento_id: int, claims: dict) -> dict:
+    rol = claims.get("rol", "")
+    if rol == seguridad.ROL_PACIENTE:
+        auth.verificar_acceso_documento(claims, documento_id, accion="generar_reporte")
+    elif not seguridad.tiene_permiso(rol, "reporte:generar"):
+        auth.registrar_acceso(claims, "acceso_denegado", f"reporte:{documento_id}", "denegado",
+                              {"motivo": "el rol no puede generar reportes de otros"})
+        raise HTTPException(status_code=403, detail=f"El rol '{rol}' no puede generar el Reporte de HC")
+
+    historia = consulta_unificada.historia_unificada(documento_id)
+    if not historia["encontrado"] and not historia["atenciones"]:
+        raise HTTPException(status_code=404,
+                            detail=f"No hay registros del documento {documento_id} en las sedes disponibles")
+    return reporte.construir(historia, claims.get("sub", "?"), rol)
+
+
+@app.get("/api/v1/reporte/{documento_id}", tags=["reporte"],
+         summary="Reporte de HC unificado (JSON) con cobertura y sello")
+async def reporte_hc(documento_id: int, claims: dict = Depends(auth.requiere_sesion)):
+    datos = _reporte_para(documento_id, claims)
+    sello = auth.registrar_acceso(
+        claims, "generar_reporte", f"paciente:{documento_id}", "ok",
+        {"completo": datos["completo"], "sello": datos["sello_integridad"],
+         "cobertura_pct": datos["cobertura_campos"]["cobertura_pct"]},
+    )
+    datos["sello_auditoria"] = (sello or {}).get("hash")
+    return datos
+
+
+@app.get("/api/v1/reporte/{documento_id}/html", response_class=HTMLResponse, tags=["reporte"],
+         summary="Reporte de HC imprimible (HTML → PDF con Ctrl+P)")
+async def reporte_hc_html(documento_id: int, claims: dict = Depends(auth.requiere_sesion)):
+    datos = _reporte_para(documento_id, claims)
+    auth.registrar_acceso(claims, "exportar_reporte", f"paciente:{documento_id}", "ok",
+                          {"formato": "html", "sello": datos["sello_integridad"]})
+    return HTMLResponse(content=reporte.a_html(datos))
+
+
+@app.get("/api/v1/reporte/{documento_id}/bundle", tags=["reporte"],
+         summary="Bundle FHIR (document) de la historia unificada")
+async def reporte_hc_bundle(documento_id: int, claims: dict = Depends(auth.requiere_sesion)):
+    rol = claims.get("rol", "")
+    if rol == seguridad.ROL_PACIENTE:
+        auth.verificar_acceso_documento(claims, documento_id, accion="descargar_bundle")
+    elif not seguridad.tiene_permiso(rol, "bundle:otros"):
+        raise HTTPException(status_code=403, detail=f"El rol '{rol}' no puede descargar Bundles de otros")
+
+    historia = consulta_unificada.historia_unificada(documento_id)
+    bundle = reporte.bundle_del_paciente(historia)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail=f"Sin datos del documento {documento_id}")
+    auth.registrar_acceso(claims, "descargar_bundle", f"paciente:{documento_id}", "ok",
+                          {"recursos": len(bundle.get("entry", []))})
+    return bundle
+
+
+@app.get("/api/v1/reporte/{documento_id}/bundle/validar", tags=["reporte"],
+         summary="Valida el Bundle contra HAPI ($validate)")
+async def validar_bundle_paciente(documento_id: int,
+                                  claims: dict = Depends(auth.requiere("plataforma:estado"))):
+    historia = consulta_unificada.historia_unificada(documento_id)
+    bundle = reporte.bundle_del_paciente(historia)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail=f"Sin datos del documento {documento_id}")
+    try:
+        return {"documento_id": documento_id, **cliente_hapi.validar_bundle(bundle)}
+    except cliente_hapi.ErrorHapi as exc:
+        raise HTTPException(status_code=503, detail=f"HAPI no disponible: {exc}") from exc
+
+
+# ============================================================================
+# VISTA PACIENTE
+# ============================================================================
+
+@app.get("/api/v1/paciente/mi-historia", tags=["paciente"],
+         summary="El paciente consulta su propia historia unificada")
+async def mi_historia(claims: dict = Depends(auth.requiere("historia:propia"))):
+    documento = claims.get("documento")
+    if documento is None:
+        raise HTTPException(status_code=400, detail="La sesión no tiene documento asociado")
+    historia = consulta_unificada.historia_unificada(int(documento))
+    sello = auth.registrar_acceso(claims, "leer_historia", f"paciente:{documento}", "ok",
+                                  {"propia": True, "parcial": historia["parcial"]})
+    historia["sello_auditoria"] = (sello or {}).get("hash")
+    return historia
+
+
+@app.get("/api/v1/paciente/mis-accesos", tags=["paciente"],
+         summary="Quién accedió a mi historia y cuándo")
+async def mis_accesos(limite: int = Query(50, ge=1, le=200),
+                      claims: dict = Depends(auth.requiere("auditoria:propia"))):
+    documento = claims.get("documento")
+    if documento is None:
+        raise HTTPException(status_code=400, detail="La sesión no tiene documento asociado")
+    try:
+        eventos = auditoria.listar(limite=limite, recurso=f"paciente:{documento}")
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Auditoría no disponible: {exc}") from exc
+    return {
+        "documento": documento,
+        "total": len(eventos),
+        "accesos": [
+            {
+                "evento_id": e["evento_id"],
+                "cuando": e["ts"].isoformat() if hasattr(e["ts"], "isoformat") else str(e["ts"]),
+                "quien": e["actor"],
+                "rol": e["rol"],
+                "accion": e["accion"],
+                "resultado": e["resultado"],
+                "sello": e["hash"][:16],
+            }
+            for e in eventos
+        ],
+    }
+
+
+@app.get("/api/v1/paciente/mi-bundle", tags=["paciente"],
+         summary="El paciente descarga su Bundle FHIR")
+async def mi_bundle(claims: dict = Depends(auth.requiere("bundle:propio"))):
+    documento = claims.get("documento")
+    if documento is None:
+        raise HTTPException(status_code=400, detail="La sesión no tiene documento asociado")
+    historia = consulta_unificada.historia_unificada(int(documento))
+    bundle = reporte.bundle_del_paciente(historia)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail="Todavía no hay datos suyos en las sedes disponibles")
+    auth.registrar_acceso(claims, "descargar_bundle", f"paciente:{documento}", "ok",
+                          {"propio": True, "recursos": len(bundle.get("entry", []))})
+    return bundle
+
+
+# ============================================================================
+# AUDITORÍA ENCADENADA POR HASH
+# ============================================================================
+
+@app.get("/api/v1/auditoria", tags=["auditoria"], summary="Eventos de la cadena de auditoría")
+async def listar_auditoria(limite: int = Query(100, ge=1, le=1000), actor: Optional[str] = None,
+                           claims: dict = Depends(auth.requiere("auditoria:leer"))):
+    try:
+        eventos = auditoria.listar(limite=limite, actor=actor)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Auditoría no disponible: {exc}") from exc
+    return {
+        "total": len(eventos),
+        "eventos": [consulta_unificada.serializable(e) for e in eventos],
+    }
+
+
+@app.get("/api/v1/auditoria/verificar", tags=["auditoria"],
+         summary="Verificador de integridad: recorre la cadena y señala el primer evento alterado")
+async def verificar_auditoria(claims: dict = Depends(auth.requiere("plataforma:estado"))):
+    try:
+        resultado = auditoria.verificar_cadena()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Auditoría no disponible: {exc}") from exc
+    return resultado
+
+
+@app.get("/api/v1/auditoria/{evento_id}/fhir", tags=["auditoria"],
+         summary="El evento como AuditEvent de FHIR R4")
+async def auditoria_fhir(evento_id: int, claims: dict = Depends(auth.requiere("auditoria:leer"))):
+    try:
+        with db.cursor_central() as cur:
+            cur.execute("SELECT * FROM evento_auditoria WHERE evento_id = %s;", (evento_id,))
+            fila = cur.fetchone()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Auditoría no disponible: {exc}") from exc
+    if fila is None:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return auditoria.a_fhir_auditevent(dict(fila))
+
+
+# ============================================================================
+# TABLERO DE ESTADO DE LA PLATAFORMA (dentro del Reporte de HC)
+# ============================================================================
+
+async def _metricas_hsb() -> dict:
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as cli:
+            r = await cli.get(f"{sedes.HSB_BASE_URL}/metrics.json")
+            r.raise_for_status()
+            return r.json()
+    except Exception as exc:
+        return {"disponible": False, "error": str(exc)}
+
+
+@app.get("/api/v1/plataforma/estado", tags=["plataforma"],
+         summary="Tablero: nodos, cobertura FHIR, bus y verificación de auditoría")
+async def estado_plataforma(claims: dict = Depends(auth.requiere("plataforma:estado"))):
+    estado_sedes = db.estado_sedes()
+    cobertura = db.cobertura_fhir_por_sede()
+    hapi = await cliente_hapi.a_salud()
+    bus = await _metricas_hsb()
+    try:
+        integridad = auditoria.verificar_cadena()
+    except Exception as exc:
+        integridad = {"integra": None, "error": str(exc)}
+
+    total = sum(c["total"] for c in cobertura if c["disponible"])
+    migrados = sum(c["migrados"] for c in cobertura if c["disponible"])
+
+    return {
+        "sedes": estado_sedes,
+        "sedes_disponibles": f"{sum(1 for s in estado_sedes if s['disponible'])}/3",
+        "almacen_central": db.ping(sedes.CENTRAL),
+        "hapi_fhir": {"disponible": hapi.get("disponible"), "fhir_version": hapi.get("fhir_version")},
+        "cobertura_fhir": {
+            "por_sede": cobertura,
+            "global_pct": round(100.0 * migrados / total, 1) if total else 0.0,
+        },
+        "bus": bus,
+        "auditoria": integridad,
+        "terminologia": terminologia.origen(),
+    }
+
+
+@app.post("/api/v1/plataforma/nodos/{sede_id}/{accion}", tags=["plataforma"],
+          summary="Apaga o enciende el nodo de una sede (demo de resiliencia)")
+async def controlar_nodo(sede_id: int, accion: str,
+                         claims: dict = Depends(auth.requiere("nodo:controlar"))):
+    """
+    Solo el rol auditor puede hacerlo, y queda en la auditoría. Requiere que el
+    contenedor tenga montado el socket de Docker; si no, devuelve el comando
+    equivalente para ejecutarlo desde el host.
+    """
+    if accion not in ("stop", "start", "restart"):
+        raise HTTPException(status_code=400, detail="La acción debe ser stop, start o restart")
+    sede = sedes.sede(sede_id)
+    contenedor = sede["nodo"]
+    comando = f"docker compose {'stop' if accion == 'stop' else accion} {contenedor}"
+
+    resultado: Dict[str, Any] = {"sede_id": sede_id, "nodo": contenedor, "accion": accion,
+                                 "comando_equivalente": comando}
+    socket_docker = "/var/run/docker.sock"
+    if os.path.exists(socket_docker):
+        try:
+            transporte = httpx.AsyncHTTPTransport(uds=socket_docker)
+            async with httpx.AsyncClient(transport=transporte, base_url="http://docker", timeout=20.0) as cli:
+                r = await cli.post(f"/v1.41/containers/{contenedor}/{accion}")
+                resultado["ejecutado"] = r.status_code in (204, 304)
+                resultado["respuesta_docker"] = r.status_code
+        except Exception as exc:
+            resultado["ejecutado"] = False
+            resultado["error"] = str(exc)
+    else:
+        resultado["ejecutado"] = False
+        resultado["nota"] = "Sin acceso al socket de Docker: ejecute el comando desde el host"
+
+    auth.registrar_acceso(claims, f"nodo_{accion}", f"sede:{sede_id}",
+                          "ok" if resultado.get("ejecutado") else "error", resultado)
+    return resultado
+
+
+# ============================================================================
+# PUENTE CON EL BUS (las vistas no hablan con las sedes, hablan con el bus)
+# ============================================================================
+
+@app.get("/api/v1/bus/mensajes", tags=["bus"], summary="Estado de los mensajes enviados al bus")
+async def bus_mensajes(estado: Optional[str] = None, sede: Optional[int] = None,
+                       limite: int = Query(50, ge=1, le=500),
+                       claims: dict = Depends(auth.requiere("bus:estado"))):
+    params: Dict[str, Any] = {"limite": limite}
+    if estado:
+        params["estado"] = estado
+    if sede:
+        params["sede"] = sede
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as cli:
+            r = await cli.get(f"{sedes.HSB_BASE_URL}/hsb/mensajes", params=params)
+            r.raise_for_status()
+            return r.json()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"El bus no responde: {exc}") from exc
+
+
+@app.get("/api/v1/bus/metricas", tags=["bus"], summary="Métricas del bus")
+async def bus_metricas(claims: dict = Depends(auth.requiere("bus:estado"))):
+    return await _metricas_hsb()
+
+
+@app.post("/api/v1/bus/hl7", tags=["bus"], summary="Envía un mensaje HL7 v2 al bus")
+async def bus_enviar_hl7(request: Request, claims: dict = Depends(auth.requiere("bus:enviar"))):
+    crudo = (await request.body()).decode("utf-8", errors="replace")
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as cli:
+            r = await cli.post(f"{sedes.HSB_BASE_URL}/hsb/hl7", content=crudo.encode("utf-8"),
+                               headers={"Content-Type": "text/plain; charset=utf-8"})
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"El bus no responde: {exc}") from exc
+    cuerpo = r.json() if r.headers.get("content-type", "").startswith("application/json") else {"raw": r.text}
+    auth.registrar_acceso(claims, "bus_envio_manual", "hsb:hl7",
+                          "ok" if r.status_code < 400 else "error",
+                          {"estado_http": r.status_code, "resultado": cuerpo.get("resultado")})
+    if r.status_code >= 400:
+        raise HTTPException(status_code=r.status_code, detail=cuerpo)
+    return cuerpo
+
+
+@app.post("/api/v1/bus/csv", tags=["bus"], summary="Envía un CSV legado al bus")
+async def bus_enviar_csv(request: Request, sede: int = Query(..., ge=1, le=3),
+                         claims: dict = Depends(auth.requiere("bus:enviar"))):
+    crudo = (await request.body()).decode("utf-8", errors="replace")
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as cli:
+            r = await cli.post(f"{sedes.HSB_BASE_URL}/hsb/csv", params={"sede": sede},
+                               content=crudo.encode("utf-8"),
+                               headers={"Content-Type": "text/csv; charset=utf-8"})
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"El bus no responde: {exc}") from exc
+    cuerpo = r.json() if r.headers.get("content-type", "").startswith("application/json") else {"raw": r.text}
+    auth.registrar_acceso(claims, "bus_envio_manual", f"hsb:csv:sede{sede}",
+                          "ok" if r.status_code < 400 else "error",
+                          {"estado_http": r.status_code, "resumen": cuerpo.get("resumen")})
+    if r.status_code >= 400:
+        raise HTTPException(status_code=r.status_code, detail=cuerpo)
+    return cuerpo
+
+
+@app.post("/api/v1/bus/migrar", tags=["bus"],
+          summary="Normaliza a FHIR el legado de una sede (cobertura 0 % → 100 %)")
+async def bus_migrar(sede: int = Query(..., ge=1, le=3),
+                     claims: dict = Depends(auth.requiere("bus:enviar"))):
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as cli:
+            r = await cli.post(f"{sedes.HSB_BASE_URL}/hsb/migrar", params={"sede": sede})
+            r.raise_for_status()
+            cuerpo = r.json()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"El bus no responde: {exc}") from exc
+    auth.registrar_acceso(claims, "migrar_sede", f"sede:{sede}", "ok",
+                          {"resumen": cuerpo.get("resumen")})
+    return cuerpo
+
+
+@app.post("/api/v1/bus/mensajes/{mensaje_id}/reencolar", tags=["bus"],
+          summary="Devuelve un mensaje muerto a la cola")
+async def bus_reencolar(mensaje_id: int, authorization: Optional[str] = Header(None),
+                        claims: dict = Depends(auth.requiere("bus:enviar"))):
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as cli:
+            r = await cli.post(f"{sedes.HSB_BASE_URL}/hsb/mensajes/{mensaje_id}/reencolar",
+                               headers={"Authorization": authorization or ""})
+            r.raise_for_status()
+            return r.json()
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"El bus no responde: {exc}") from exc
+
+
+@app.get("/api/v1/bus/muertos", tags=["bus"], summary="Cola de mensajes muertos")
+async def bus_muertos(claims: dict = Depends(auth.requiere("bus:estado"))):
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as cli:
+            r = await cli.get(f"{sedes.HSB_BASE_URL}/hsb/muertos")
+            r.raise_for_status()
+            return r.json()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"El bus no responde: {exc}") from exc
+
+
+@app.get("/api/v1/terminologia", tags=["bus"], summary="Mapeo CIE-10 y LOINC (ConceptMap)")
+async def ver_terminologia_api():
+    tabla = terminologia.tabla()
+    return {
+        "origen": terminologia.origen(),
+        "cie10": [{"dx_local": k, **v} for k, v in sorted(tabla.items())],
+        "loinc": [{"prueba_local": k, **v} for k, v in sorted(terminologia.LOINC_LOCAL.items())],
+        "concept_map": terminologia.concept_map(),
+    }
+
+
+# ============================================================================
+# OBSERVABILIDAD (/health y /metrics en cada servicio — RNF)
+# ============================================================================
+
+@app.get("/health", tags=["observabilidad"], summary="Estado de la API y de sus dependencias")
+async def health_api(response: Response):
+    central = db.ping(sedes.CENTRAL)
+    estado_sedes = db.estado_sedes()
+    arriba = sum(1 for s in estado_sedes if s["disponible"])
+    hapi = await cliente_hapi.a_salud()
+
+    bus: Dict[str, Any]
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as cli:
+            r = await cli.get(f"{sedes.HSB_BASE_URL}/health")
+            bus = {"disponible": r.status_code < 500, "estado": r.json().get("estado")}
+    except Exception as exc:
+        bus = {"disponible": False, "error": str(exc).strip().splitlines()[0]}
+
+    # La vista sigue sirviendo con 2 de 3 sedes: eso es «degradado», no «caído».
+    if arriba == 3 and central["disponible"] and hapi.get("disponible") and bus["disponible"]:
+        estado = "ok"
+    elif arriba >= 1:
+        estado = "degradado"
+    else:
+        estado = "caido"
+        response.status_code = 503
+
+    return {
+        "servicio": "api",
+        "version": app.version,
+        "estado": estado,
+        "tiempo_activo_s": round(time.time() - _INICIO, 1),
+        "dependencias": {
+            "sedes": estado_sedes,
+            "sedes_disponibles": f"{arriba}/3",
+            "almacen_central": central,
+            "hapi_fhir": {"disponible": hapi.get("disponible"), "fhir_version": hapi.get("fhir_version")},
+            "hsb": bus,
+        },
+        "seguridad": {
+            "jwt": "activo",
+            "secreto_por_defecto": seguridad.SECRETO_POR_DEFECTO,
+            "aviso": ("Defina JWT_SECRET en el archivo .env antes de cualquier uso real"
+                      if seguridad.SECRETO_POR_DEFECTO else None),
+        },
+    }
+
+
+@app.get("/metrics", response_class=PlainTextResponse, tags=["observabilidad"],
+         summary="Métricas de la API (formato Prometheus)")
+async def metrics_api():
+    estado_sedes = db.estado_sedes()
+    cobertura = db.cobertura_fhir_por_sede()
+    lineas = [
+        "# HELP api_tiempo_activo_segundos Tiempo que lleva en marcha la API.",
+        "# TYPE api_tiempo_activo_segundos gauge",
+        f"api_tiempo_activo_segundos {round(time.time() - _INICIO, 1)}",
+        "# HELP api_peticiones_total Peticiones atendidas por la API.",
+        "# TYPE api_peticiones_total counter",
+        f"api_peticiones_total {_CONTADORES['peticiones']}",
+        "# HELP api_peticiones_error_total Peticiones que terminaron en error.",
+        "# TYPE api_peticiones_error_total counter",
+        f"api_peticiones_error_total {_CONTADORES['errores']}",
+        "# HELP api_denegaciones_total Accesos denegados por rol (401 y 403).",
+        "# TYPE api_denegaciones_total counter",
+        f"api_denegaciones_total {_CONTADORES['denegados']}",
+        "# HELP api_latencia_media_ms Latencia media de las peticiones.",
+        "# TYPE api_latencia_media_ms gauge",
+        f"api_latencia_media_ms {round(_CONTADORES['latencia_total_ms'] / max(_CONTADORES['peticiones'], 1), 2)}",
+        "# HELP sede_disponible 1 si el nodo de la sede responde.",
+        "# TYPE sede_disponible gauge",
+    ]
+    for s in estado_sedes:
+        lineas.append(f'sede_disponible{{sede="{s["sede_id"]}",nombre="{s["nombre"]}"}} '
+                      f'{1 if s["disponible"] else 0}')
+        lineas.append(f'sede_latencia_ms{{sede="{s["sede_id"]}"}} {s["latencia_ms"]}')
+    lineas += [
+        "# HELP cobertura_fhir_pct Porcentaje de pacientes del legado ya normalizados a FHIR.",
+        "# TYPE cobertura_fhir_pct gauge",
+    ]
+    for c in cobertura:
+        if c["disponible"]:
+            lineas.append(f'cobertura_fhir_pct{{sede="{c["sede_id"]}",nombre="{c["nombre"]}"}} '
+                          f'{c["cobertura_pct"]}')
+            lineas.append(f'cobertura_fhir_pacientes{{sede="{c["sede_id"]}"}} {c["total"]}')
+    return "\n".join(lineas) + "\n"
+
+
+@app.get("/metrics.json", tags=["observabilidad"], summary="Métricas de la API en JSON")
+async def metrics_api_json():
+    return {
+        "tiempo_activo_s": round(time.time() - _INICIO, 1),
+        "contadores": dict(_CONTADORES),
+        "latencia_media_ms": round(_CONTADORES["latencia_total_ms"] / max(_CONTADORES["peticiones"], 1), 2),
+        "sedes": db.estado_sedes(),
+        "cobertura_fhir": db.cobertura_fhir_por_sede(),
+    }
 
 
 # Estáticos al final para no tapar rutas

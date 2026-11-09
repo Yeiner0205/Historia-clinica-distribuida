@@ -1,0 +1,164 @@
+/* ===========================================================================
+   vistas.css — estilos compartidos por las vistas del parcial
+   (Paciente, Reporte de HC e inicio de sesión).
+
+   Accesibilidad: contraste AA sobre el fondo oscuro, foco visible en todo lo
+   enfocable, etiquetas asociadas a cada campo y mensajes en regiones
+   `aria-live`. Todo se puede recorrer con el teclado.
+   ======================================================================== */
+:root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #38bdf8;
+    --bg: #0a0a14;
+    --surface: #12121f;
+    --surface2: #1a1a2e;
+    --surface3: #1e2540;
+    --border: rgba(99, 102, 241, .22);
+    --text: #e8edf5;
+    --text-muted: #a3b0c2;
+    --radius: 16px;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.55;
+}
+
+a { color: var(--primary); }
+
+:focus-visible {
+    outline: 3px solid var(--info);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+.salto-contenido {
+    position: absolute; left: -9999px; top: 0;
+    background: var(--primary); color: #fff; padding: 10px 16px; z-index: 999;
+}
+.salto-contenido:focus { left: 8px; top: 8px; }
+
+/* ── Barra superior ───────────────────────────────────────────────────── */
+.barra {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 14px 22px; background: rgba(18, 18, 31, .92);
+    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(10px);
+}
+.barra h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+.barra .rol {
+    font-size: .74rem; text-transform: uppercase; letter-spacing: .08em;
+    background: rgba(99, 102, 241, .18); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 99px; color: var(--primary);
+}
+.barra .espacio { flex: 1; }
+
+.contenedor { max-width: 1180px; margin: 0 auto; padding: 22px 18px 56px; }
+
+/* ── Tarjetas ─────────────────────────────────────────────────────────── */
+.tarjeta {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 18px;
+}
+.tarjeta h2 { font-size: 1.05rem; margin-bottom: 4px; }
+.tarjeta h3 { font-size: .95rem; margin: 14px 0 6px; color: var(--primary); }
+.sub { color: var(--text-muted); font-size: .86rem; }
+
+.rejilla { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.rejilla-2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+.dato { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.dato span {
+    display: block; font-size: .7rem; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--text-muted); margin-bottom: 3px;
+}
+.dato strong { font-size: 1.05rem; font-weight: 600; word-break: break-word; }
+.dato .grande { font-size: 1.6rem; }
+
+/* ── Botones y formularios ────────────────────────────────────────────── */
+button, .boton {
+    font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--primary); color: #fff; border: 1px solid var(--primary-dark);
+    padding: 10px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;
+    text-decoration: none;
+}
+button:hover, .boton:hover { background: var(--primary-dark); }
+button.secundario, .boton.secundario {
+    background: var(--surface2); color: var(--text); border-color: var(--border);
+}
+button.secundario:hover { background: var(--surface3); }
+button.peligro { background: var(--danger); border-color: #b91c1c; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+
+label { display: block; font-size: .82rem; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+input, select, textarea {
+    font: inherit; width: 100%; padding: 10px 12px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+}
+.campo { margin-bottom: 14px; }
+.fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.fila > .campo { flex: 1 1 180px; margin-bottom: 0; }
+
+/* ── Estados y avisos ─────────────────────────────────────────────────── */
+.insignia {
+    display: inline-flex; align-items: center; gap: 6px; font-size: .76rem;
+    font-weight: 600; padding: 3px 10px; border-radius: 99px; border: 1px solid;
+}
+.insignia.ok { color: var(--success); border-color: rgba(16, 185, 129, .4); background: rgba(16, 185, 129, .12); }
+.insignia.mal { color: var(--danger); border-color: rgba(239, 68, 68, .4); background: rgba(239, 68, 68, .12); }
+.insignia.alerta { color: var(--warning); border-color: rgba(245, 158, 11, .4); background: rgba(245, 158, 11, .12); }
+.insignia.info { color: var(--info); border-color: rgba(56, 189, 248, .4); background: rgba(56, 189, 248, .12); }
+
+.aviso {
+    border-radius: 12px; padding: 12px 14px; margin: 12px 0; border: 1px solid; font-size: .9rem;
+}
+.aviso.error { color: #fecaca; background: rgba(239, 68, 68, .12); border-color: rgba(239, 68, 68, .45); }
+.aviso.bien { color: #bbf7d0; background: rgba(16, 185, 129, .12); border-color: rgba(16, 185, 129, .45); }
+.aviso.parcial { color: #fde68a; background: rgba(245, 158, 11, .12); border-color: rgba(245, 158, 11, .45); }
+
+/* ── Tablas ───────────────────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+caption { text-align: left; color: var(--text-muted); font-size: .8rem; padding-bottom: 6px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--text-muted); font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; }
+tbody tr:hover { background: var(--surface2); }
+.tabla-scroll { overflow-x: auto; }
+
+/* ── Barras de progreso ───────────────────────────────────────────────── */
+.barra-progreso { height: 10px; background: var(--surface3); border-radius: 99px; overflow: hidden; }
+.barra-progreso i { display: block; height: 100%; background: var(--success); transition: width .4s; }
+
+/* ── Línea de tiempo de la historia ───────────────────────────────────── */
+.atencion {
+    border-left: 3px solid var(--primary); background: var(--surface2);
+    border-radius: 0 12px 12px 0; padding: 12px 14px; margin: 10px 0;
+}
+.atencion h4 { font-size: .95rem; }
+.atencion .meta { color: var(--text-muted); font-size: .8rem; margin: 2px 0 6px; }
+.atencion ul { margin-left: 18px; font-size: .87rem; }
+.sello {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; word-break: break-all;
+}
+
+/* ── Pestañas ─────────────────────────────────────────────────────────── */
+.pestanas { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.pestanas button {
+    background: transparent; color: var(--text-muted); border: none; border-bottom: 2px solid transparent;
+    border-radius: 0; padding: 10px 14px;
+}
+.pestanas button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
+.panel[hidden] { display: none; }
+
+.cargando { color: var(--text-muted); font-size: .9rem; }
+.oculto { display: none !important; }
