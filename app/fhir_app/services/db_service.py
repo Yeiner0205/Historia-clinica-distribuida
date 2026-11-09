@@ -19,21 +19,26 @@ logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────
 # Configuración de nodos
+# Fuente única de verdad: comun/sedes.py (un nodo por sede).
 # ─────────────────────────────────────────────
-USE_DOCKER_NAMES = os.getenv("USE_DOCKER_NAMES", "false").lower() == "true"
+from comun import sedes as _sedes
 
-if USE_DOCKER_NAMES:
-    NODOS = [
-        {"id": "nodo1", "host": "pg_nodo1", "port": 5432, "user": "admin", "password": "admin", "dbname": "historia_clinica", "range": "< 4.000.000.000"},
-        {"id": "nodo2", "host": "pg_nodo2", "port": 5432, "user": "admin", "password": "admin", "dbname": "historia_clinica", "range": "4B – 7B"},
-        {"id": "nodo3", "host": "pg_nodo3", "port": 5432, "user": "admin", "password": "admin", "dbname": "historia_clinica", "range": "> 7.000.000.000"},
-    ]
-else:
-    NODOS = [
-        {"id": "nodo1", "host": "localhost", "port": 5433, "user": "admin", "password": "admin", "dbname": "historia_clinica", "range": "< 4.000.000.000"},
-        {"id": "nodo2", "host": "localhost", "port": 5434, "user": "admin", "password": "admin", "dbname": "historia_clinica", "range": "4B – 7B"},
-        {"id": "nodo3", "host": "localhost", "port": 5435, "user": "admin", "password": "admin", "dbname": "historia_clinica", "range": "> 7.000.000.000"},
-    ]
+USE_DOCKER_NAMES = _sedes.USE_DOCKER_NAMES
+
+NODOS = [
+    {
+        "id": f"nodo{s['sede_id']}",
+        "sede_id": s["sede_id"],
+        "sede": s["nombre"],
+        "host": s["host"],
+        "port": s["port"],
+        "user": s["user"],
+        "password": s["password"],
+        "dbname": s["dbname"],
+        "range": s["rango_documento"],
+    }
+    for s in _sedes.SEDES
+]
 
 # ─────────────────────────────────────────────
 # DDL — sentencias CREATE TABLE IF NOT EXISTS
@@ -166,6 +171,14 @@ def _conectar(nodo: dict):
     )
 
 
+def _nodo_por_sede(sede_id: int) -> dict:
+    """Nodo de una sede (1, 2 o 3)."""
+    for n in NODOS:
+        if n["sede_id"] == int(sede_id):
+            return n
+    raise ValueError(f"sede desconocida: {sede_id}")
+
+
 def _nodo_por_documento(documento_id: int) -> dict:
     """Fragmentación horizontal por rango de documento_id."""
     if documento_id < 4_000_000_000:
@@ -227,34 +240,76 @@ class DBService:
     # ─────────────────────────────────────────────
 
     @staticmethod
-    def buscar_paciente(documento_id: int) -> Optional[Dict[str, Any]]:
+    def buscar_paciente(documento_id: int, sede_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """
-        Busca un paciente por documento_id en el nodo correcto.
-        Retorna None si no existe.
+        Busca un paciente por documento_id.
+
+        * `sede_id` dado  → solo en esa sede.
+        * `sede_id` None  → recorre las tres sedes y devuelve la primera
+          coincidencia. Un paciente puede existir en varias sedes: para verlas
+          todas use `buscar_en_todas_las_sedes`.
         """
-        nodo = _nodo_por_documento(documento_id)
+        objetivo = [_nodo_por_sede(sede_id)] if sede_id else NODOS
+        for nodo in objetivo:
+            fila = DBService._buscar_en_nodo(documento_id, nodo)
+            if fila:
+                return fila
+        return None
+
+    @staticmethod
+    def _buscar_en_nodo(documento_id: int, nodo: dict) -> Optional[Dict[str, Any]]:
         try:
             conn = _conectar(nodo)
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT * FROM usuario WHERE documento_id = %s;",
-                    (documento_id,)
-                )
+                cur.execute("SELECT * FROM usuario WHERE documento_id = %s;", (documento_id,))
                 row = cur.fetchone()
             conn.close()
             if row:
                 paciente = dict(row)
                 paciente["_nodo"] = nodo["id"]
+                paciente["_sede_id"] = nodo["sede_id"]
+                paciente["_sede"] = nodo["sede"]
                 return paciente
             return None
         except psycopg2.errors.UndefinedTable:
-            # La tabla no existe aún — inicializar y retornar None
             logger.warning(f"Tabla 'usuario' no existe en {nodo['id']} — inicializando...")
             DBService.inicializar_tablas(nodo)
             return None
         except Exception as e:
-            logger.error(f"Error buscando paciente {documento_id} en {nodo['id']}: {e}")
-            raise
+            # Una sede caída no debe tumbar la búsqueda en las demás.
+            logger.warning(f"Sede {nodo['id']} no disponible al buscar {documento_id}: {e}")
+            return None
+
+    @staticmethod
+    def buscar_en_todas_las_sedes(documento_id: int) -> Dict[str, Any]:
+        """
+        Dice en qué sedes existe el paciente y cuáles no respondieron.
+        Es la base de la detección de duplicados entre sedes (vista de admisión).
+        """
+        encontrado, no_disponibles = [], []
+        for nodo in NODOS:
+            try:
+                conn = _conectar(nodo)
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT * FROM usuario WHERE documento_id = %s;", (documento_id,))
+                    row = cur.fetchone()
+                conn.close()
+                if row:
+                    p = dict(row)
+                    p["_nodo"] = nodo["id"]
+                    p["_sede_id"] = nodo["sede_id"]
+                    p["_sede"] = nodo["sede"]
+                    encontrado.append(p)
+            except Exception as e:  # noqa: BLE001
+                no_disponibles.append({"sede_id": nodo["sede_id"], "sede": nodo["sede"],
+                                       "error": str(e).strip().splitlines()[0]})
+        return {
+            "documento_id": documento_id,
+            "sedes_con_registro": [p["_sede_id"] for p in encontrado],
+            "pacientes": encontrado,
+            "sedes_no_disponibles": no_disponibles,
+            "parcial": bool(no_disponibles),
+        }
 
     @staticmethod
     def buscar_por_nombre(nombre: str, limite: int = 20) -> List[Dict[str, Any]]:
@@ -284,19 +339,25 @@ class DBService:
     # ─────────────────────────────────────────────
 
     @staticmethod
-    def insertar_paciente(data: Dict[str, Any], fhir_patient_id: Optional[str] = None) -> Dict[str, Any]:
+    def insertar_paciente(
+        data: Dict[str, Any],
+        fhir_patient_id: Optional[str] = None,
+        sede_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """
-        Inserta un paciente nuevo en el nodo correspondiente.
-        Si el paciente ya existe retorna su registro sin duplicar.
+        Inserta un paciente en la sede indicada (la del admisionista). Si no se
+        indica sede, se aplica la fragmentación por documento del repositorio
+        de referencia. Si el paciente ya existe en esa sede, no se duplica.
         """
         documento_id = int(data["numeroDocumento"])
-        nodo = _nodo_por_documento(documento_id)
+        nodo = _nodo_por_sede(sede_id) if sede_id else _nodo_por_documento(documento_id)
 
         # Asegurar que la tabla existe
         DBService.inicializar_tablas(nodo)
 
-        # Verificar si ya existe
-        existente = DBService.buscar_paciente(documento_id)
+        # Verificar si ya existe EN ESA SEDE (puede existir en otra: eso es
+        # justamente la historia fraccionada que la plataforma unifica).
+        existente = DBService._buscar_en_nodo(documento_id, nodo)
         if existente:
             return {"accion": "existente", "paciente": existente, "nodo": nodo["id"]}
 
@@ -334,7 +395,7 @@ class DBService:
                 conn.commit()
             conn.close()
 
-            nuevo = DBService.buscar_paciente(documento_id)
+            nuevo = DBService._buscar_en_nodo(documento_id, nodo)
             return {"accion": "creado", "paciente": nuevo, "nodo": nodo["id"]}
 
         except Exception as e:
@@ -342,9 +403,9 @@ class DBService:
             raise
 
     @staticmethod
-    def actualizar_fhir_id(documento_id: int, fhir_patient_id: str) -> bool:
+    def actualizar_fhir_id(documento_id: int, fhir_patient_id: str, sede_id: Optional[int] = None) -> bool:
         """Actualiza el campo fhir_patient_id para vincular la DB local con FHIR."""
-        nodo = _nodo_por_documento(documento_id)
+        nodo = _nodo_por_sede(sede_id) if sede_id else _nodo_por_documento(documento_id)
         try:
             conn = _conectar(nodo)
             with conn.cursor() as cur:
@@ -369,7 +430,8 @@ class DBService:
         estados = []
         tablas_esperadas = ["usuario", "atencion", "tecnologia_salud", "diagnostico", "egreso", "profesional_salud"]
         for nodo in NODOS:
-            info = {"nodo": nodo["id"], "estado": "DOWN", "tablas": {}}
+            info = {"nodo": nodo["id"], "sede_id": nodo["sede_id"], "sede": nodo["sede"],
+                    "estado": "DOWN", "tablas": {}}
             try:
                 conn = _conectar(nodo)
                 with conn.cursor() as cur:
