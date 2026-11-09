@@ -42,3 +42,7 @@ npm-debug.log*
 # Environment variables
 .env
 .env.local
+
+# Diagramas: el script regenera los SVG, pero se versionan porque el informe
+# los necesita. Lo que no se versiona es la caché de Python.
+docs/uml/__pycache__/

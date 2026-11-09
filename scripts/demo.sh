@@ -70,8 +70,9 @@ paso "Paso 1 · Las tres sedes con cobertura FHIR en 0 %"
 dice "Los pacientes ya existen en el legado, pero ninguno tiene recurso FHIR."
 curl -s "$API/api/v1/datos/cobertura" | json '
 for c in d["por_sede"]:
-    print(f"   sede {c[\"sede_id\"]} {c[\"nombre\"]:<11} {c[\"migrados\"]}/{c[\"total\"]} pacientes = {c[\"cobertura_pct\"]} %")
-print(f"   GLOBAL: {d[\"global\"][\"cobertura_pct\"]} %")'
+    print("   sede %s %-11s %s/%s pacientes = %s %%" % (
+        c["sede_id"], c["nombre"], c["migrados"], c["total"], c["cobertura_pct"]))
+print("   GLOBAL: %s %%" % d["global"]["cobertura_pct"])'
 pausa
 
 # ── Paso 2 · un HL7 y un CSV ────────────────────────────────────────────────
@@ -99,7 +100,9 @@ curl -s -X POST --data-binary @ejemplos/04_sede3_legado.csv "$HSB/hsb/csv?sede=3
 print("   resumen:", d["resumen"])
 for r in d["resultados"]:
     motivo = "; ".join(r.get("motivos") or [])
-    print(f"     fila {r[\"fila\"]} doc {r.get(\"documento\",\"?\"):>5} -> {r[\"resultado\"]}" + (f"  ({motivo})" if motivo else ""))'
+    print("     fila %s doc %5s -> %s%s" % (
+        r["fila"], r.get("documento", "?"), r["resultado"],
+        ("  (" + motivo + ")") if motivo else ""))'
 pausa
 
 paso "Paso 2b · Normalizar el resto del legado: la cobertura sube al 100 %"
@@ -111,8 +114,9 @@ for s in 1 2 3; do
 done
 curl -s "$API/api/v1/datos/cobertura" | json '
 for c in d["por_sede"]:
-    print(f"   sede {c[\"sede_id\"]} {c[\"nombre\"]:<11} {c[\"migrados\"]}/{c[\"total\"]} = {c[\"cobertura_pct\"]} %")
-print(f"   GLOBAL: {d[\"global\"][\"cobertura_pct\"]} %")'
+    print("   sede %s %-11s %s/%s = %s %%" % (
+        c["sede_id"], c["nombre"], c["migrados"], c["total"], c["cobertura_pct"]))
+print("   GLOBAL: %s %%" % d["global"]["cobertura_pct"])'
 pausa
 
 # ── Paso 3 · idempotencia ───────────────────────────────────────────────────
@@ -203,10 +207,13 @@ pausa
 paso "Paso 7 · Consulta unificada del paciente 1001 y su Reporte de HC"
 curl -s -H "Authorization: Bearer $TOK_AUD" "$API/api/v1/reporte/1001" | json '
 print("   completo:", d["completo"])
-print("   sedes:", ", ".join(f"{s[\"nombre\"]}({s[\"totales\"][\"atenciones\"]} at.)" for s in d["sedes"] if s["disponible"]))
+print("   sedes:", ", ".join(
+    "%s(%s at.)" % (s["nombre"], s["totales"]["atenciones"])
+    for s in d["sedes"] if s["disponible"]))
 c = d["cobertura_campos"]
-print(f"   cobertura de campos: {c[\"campos_presentes\"]}/{c[\"campos_totales\"]} = {c[\"cobertura_pct\"]} %")
-print("   campos faltantes:", ", ".join(f[\"campo\"] for f in c["faltantes"][:4]) or "ninguno")
+print("   cobertura de campos: %s/%s = %s %%" % (
+    c["campos_presentes"], c["campos_totales"], c["cobertura_pct"]))
+print("   campos faltantes:", ", ".join(x["campo"] for x in c["faltantes"][:4]) or "ninguno")
 print("   sello de integridad:", d["sello_integridad"][:48], "…")
 print("   Bundle FHIR:", d["bundle_fhir"]["type"], "con", len(d["bundle_fhir"]["entry"]), "recursos")'
 

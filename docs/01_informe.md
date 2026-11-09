@@ -35,8 +35,9 @@ valida, los normaliza a FHIR R4 (Patient, Encounter, Condition con CIE-10 y
 Observation con LOINC) y los entrega a un servidor HAPI y al nodo de la sede
 correspondiente, y se añadieron seguridad por rol, auditoría encadenada por
 hash y cuatro vistas. Los resultados medidos sobre los mensajes de prueba
-muestran una latencia media de extremo a extremo de 221 ms (p95 de 808 ms),
-entrega idempotente comprobada (reenviar un mensaje no crea un segundo
+muestran una latencia media de extremo a extremo de 328 ms en frío y 221 ms
+con el sistema caliente (p95 de 1 184 ms y 808 ms), entrega idempotente
+comprobada (reenviar un mensaje no crea un segundo
 paciente), recuperación automática tras apagar el servidor FHIR y una sede, y
 cobertura de migración a FHIR que pasa del 0 % al 100 % en las tres sedes.
 Los Bundle generados, tanto de tipo `transaction` como `document`, son
@@ -653,10 +654,10 @@ Resumen de lo observado en la ejecución de referencia:
 
 | Métrica | Valor medido |
 | --- | --- |
-| Latencia media de extremo a extremo | 221 ms |
-| Percentil 95 de latencia | 808 ms |
-| Mensajes procesados | 17 (14 entregados, 3 rechazados) |
-| Porcentaje de fallidos | 17,6 % (son los rechazos previstos por el contrato de ejemplos) |
+| Latencia media de extremo a extremo | 328 ms en frío · 221 ms en caliente |
+| Percentil 95 de latencia | 1 184 ms en frío · 808 ms en caliente |
+| Mensajes procesados | 16 (13 entregados, 3 rechazados) |
+| Porcentaje de fallidos | 18,75 % (son exactamente los rechazos que manda el contrato de ejemplos; descontándolos, 0 %) |
 | Duplicados frenados por idempotencia | comprobado: el reenvío responde `duplicado` y deja un solo paciente |
 | Cobertura FHIR por sede | 0 % → 100 % en las tres |
 | Recuperación tras caída de HAPI | mensaje entregado al reencolar, sin duplicar |
@@ -664,17 +665,19 @@ Resumen de lo observado en la ejecución de referencia:
 
 ### Discusión
 
-**Sobre la latencia.** Los 221 ms de media son de una máquina de desarrollo
-con todo en contenedores locales, y la mayor parte se va en la llamada HTTP a
-HAPI, no en el procesamiento del bus. El percentil 95 (808 ms) corresponde a
-los primeros mensajes, cuando HAPI todavía está calentando sus cachés. No es
+**Sobre la latencia.** Son de una máquina de desarrollo con todo en
+contenedores locales, y la mayor parte del tiempo se va en la llamada HTTP a
+HAPI, no en el procesamiento del bus: leer, validar y normalizar está por
+debajo de 5 ms. La diferencia entre la corrida en frío (328 ms de media) y la
+misma plataforma ya caliente (221 ms) son las cachés de HAPI, y el percentil
+95 corresponde siempre a los primeros mensajes. No es
 una medición de rendimiento comparable con la literatura: es una medición de
 que el sistema funciona y de dónde está el tiempo. Una comparación seria
 necesitaría una prueba de carga sostenida, que la plantilla marca como bonus.
 
-**Sobre el porcentaje de fallidos.** El 17,6 % no es una tasa de error: son
+**Sobre el porcentaje de fallidos.** El 18,75 % no es una tasa de error: son
 exactamente los tres mensajes que el contrato de `ejemplos/LEEME.md` manda
-rechazar. Es una cifra que hay que leer con su contexto, y conviene decirlo
+rechazar. Descontándolos, la tasa de error es 0 %. Es una cifra que hay que leer con su contexto, y conviene decirlo
 en la sustentación antes de que lo pregunten.
 
 **Sobre la idempotencia.** Es el resultado del que más confianza se tiene,

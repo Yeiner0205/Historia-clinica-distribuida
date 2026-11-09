@@ -144,7 +144,8 @@ curl -s -H "Authorization: Bearer $TOK_AUD" "$API/api/v1/auditoria?limite=5" \
   | python3 -c '
 import json,sys
 for e in json.load(sys.stdin)["eventos"]:
-    print(f"   #{e[\"evento_id\"]:<4} {e[\"actor\"]:<16} {e[\"accion\"]:<22} {e[\"resultado\"]:<10} {e[\"hash\"][:16]}…")'
+    print("   #%-4s %-16s %-22s %-10s %s..." % (
+        e["evento_id"], e["actor"], e["accion"], e["resultado"], e["hash"][:16]))'
 llamada "GET $API/api/v1/auditoria/1/fhir  (AuditEvent)"
 curl -s -H "Authorization: Bearer $TOK_AUD" "$API/api/v1/auditoria/1/fhir" | python3 -m json.tool | head -14
 fi
@@ -156,7 +157,9 @@ llamada "GET $API/api/v1/datos/cobertura"
 curl -s "$API/api/v1/datos/cobertura" | python3 -c '
 import json,sys
 d=json.load(sys.stdin)
-for c in d["por_sede"]: print(f"   sede {c[\"sede_id\"]} {c[\"nombre\"]:<11} {c[\"migrados\"]}/{c[\"total\"]} = {c[\"cobertura_pct\"]} %")
+for c in d["por_sede"]:
+    print("   sede %s %-11s %s/%s = %s %%" % (
+        c["sede_id"], c["nombre"], c["migrados"], c["total"], c["cobertura_pct"]))
 print("   GLOBAL:", d["global"]["cobertura_pct"], "%")'
 llamada "POST $API/api/v1/datos/prueba-acid?sede=1"
 curl -s -X POST -H "Authorization: Bearer $TOK_MED" "$API/api/v1/datos/prueba-acid?sede=1" \
@@ -167,7 +170,7 @@ curl -s -H "Authorization: Bearer $TOK_MED" "$API/api/v1/datos/explain?documento
 import json,sys
 for nd in json.load(sys.stdin)["nodos"]:
     linea = (nd.get("plan_paciente") or ["(sede no disponible)"])[0]
-    print(f"   sede {nd[\"sede_id\"]} {nd[\"nombre\"]:<11} {linea[:70]}")'
+    print("   sede %s %-11s %s" % (nd["sede_id"], nd["nombre"], linea[:70]))'
 fi
 
 # ──────────────────────────────── 8 · Bus ──────────────────────────────────
@@ -178,7 +181,9 @@ curl -s "$HSB/hsb/mensajes?limite=10" | python3 -c '
 import json,sys
 for m in json.load(sys.stdin)["mensajes"]:
     motivos = "; ".join(m.get("motivos") or [])[:52]
-    print(f"   #{m[\"mensaje_id\"]:<4} {m[\"formato\"]:<6} {str(m[\"tipo\"]):<9} sede {m[\"sede_id\"]} doc {str(m[\"documento\"]):<6} {m[\"estado\"]:<13} {motivos}")'
+    print("   #%-4s %-6s %-9s sede %s doc %-6s %-13s %s" % (
+        m["mensaje_id"], m["formato"], m["tipo"], m["sede_id"],
+        m["documento"], m["estado"], motivos))'
 llamada "GET $HSB/hsb/muertos"
 curl -s "$HSB/hsb/muertos" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("   mensajes muertos:", d["total"])'
 llamada "GET $HSB/hsb/reglas"
@@ -186,7 +191,8 @@ curl -s "$HSB/hsb/reglas" | python3 -c '
 import json,sys
 d=json.load(sys.stdin)
 print("   HL7 exige CIE-10:", d["hl7_exige_cie10"])
-for r in d["reglas"]: print(f"   {r[\"campo\"]:<28} {r[\"regla\"]}")'
+for r in d["reglas"]:
+    print("   %-28s %s" % (r["campo"], r["regla"]))'
 fi
 
 echo

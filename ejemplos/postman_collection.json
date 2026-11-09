@@ -1,0 +1,1245 @@
+{
+  "info": {
+    "name": "Plataforma de interoperabilidad clínica — parcial final",
+    "description": "Colección de pruebas del parcial. Las variables api, hsb y hapi apuntan a localhost por defecto. Ejecute primero «Iniciar sesión» de cada rol: los tokens se guardan solos en las variables de la colección.\n\nLos cuerpos de los mensajes HL7 y CSV están pegados en las peticiones porque Postman no lee archivos del disco; son copia exacta de ejemplos/.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "api",
+      "value": "http://localhost:8001"
+    },
+    {
+      "key": "hsb",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "hapi",
+      "value": "http://localhost:8080/fhir"
+    },
+    {
+      "key": "tok_paciente",
+      "value": ""
+    },
+    {
+      "key": "tok_admision",
+      "value": ""
+    },
+    {
+      "key": "tok_medico",
+      "value": ""
+    },
+    {
+      "key": "tok_auditor",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Iniciar sesión (ejecutar primero)",
+      "item": [
+        {
+          "name": "Entrar como paciente1007",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/auth/login",
+              "host": [
+                "{{api}}/auth/login"
+              ]
+            },
+            "description": "Devuelve el token del rol y lo guarda en la variable {{tok_paciente}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\": \"paciente1007\", \"password\": \"paciente123\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"tok_paciente\", pm.response.json().access_token);",
+                  "pm.test(\"trae rol y permisos\", () => {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d).to.have.property(\"rol\");",
+                  "    pm.expect(d.permisos).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrar como admision2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/auth/login",
+              "host": [
+                "{{api}}/auth/login"
+              ]
+            },
+            "description": "Devuelve el token del rol y lo guarda en la variable {{tok_admision}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\": \"admision2\", \"password\": \"admision123\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"tok_admision\", pm.response.json().access_token);",
+                  "pm.test(\"trae rol y permisos\", () => {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d).to.have.property(\"rol\");",
+                  "    pm.expect(d.permisos).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrar como medico1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/auth/login",
+              "host": [
+                "{{api}}/auth/login"
+              ]
+            },
+            "description": "Devuelve el token del rol y lo guarda en la variable {{tok_medico}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\": \"medico1\", \"password\": \"medico123\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"tok_medico\", pm.response.json().access_token);",
+                  "pm.test(\"trae rol y permisos\", () => {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d).to.have.property(\"rol\");",
+                  "    pm.expect(d.permisos).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrar como auditor1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/auth/login",
+              "host": [
+                "{{api}}/auth/login"
+              ]
+            },
+            "description": "Devuelve el token del rol y lo guarda en la variable {{tok_auditor}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"usuario\": \"auditor1\", \"password\": \"auditor123\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set(\"tok_auditor\", pm.response.json().access_token);",
+                  "pm.test(\"trae rol y permisos\", () => {",
+                  "    const d = pm.response.json();",
+                  "    pm.expect(d).to.have.property(\"rol\");",
+                  "    pm.expect(d.permisos).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 · Ingesta por el bus (contrato de LEEME.md)",
+      "item": [
+        {
+          "name": "01 · ADT^A01 válido de la sede 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{hsb}}/hsb/hl7",
+              "host": [
+                "{{hsb}}/hsb/hl7"
+              ]
+            },
+            "description": "Esperado: entregado. Patient 1007, Encounter y Condition J45.9 en la sede 2.",
+            "body": {
+              "mode": "raw",
+              "raw": "MSH|^~\\&|HIS_SEDE2|SEDE2|HSB|CENTRAL|20261107101500||ADT^A01|MSG-0001|P|2.5\rPID|1||1007^^^HIS||Rojas^Andrea||19900214|F\rPV1|1|O|||||MED-02^Ruiz^Mateo||||||||||||V-S2-0101|||||||||||||||||||||||||202611071015\rDG1|1||J45.9^Asma^I10||20261107|A\r"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200\", () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test(\"entregado o duplicado\", () => pm.expect([\"entregado\",\"duplicado\"]).to.include(d.resultado));",
+                  "pm.test(\"sede 2\", () => pm.expect(d.sede_id).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 · ORU^R01 de laboratorio de la sede 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{hsb}}/hsb/hl7",
+              "host": [
+                "{{hsb}}/hsb/hl7"
+              ]
+            },
+            "description": "Esperado: entregado. Observation LOINC 718-7 = 13,8 g/dL del paciente 1001.",
+            "body": {
+              "mode": "raw",
+              "raw": "MSH|^~\\&|HIS_SEDE1|SEDE1|HSB|CENTRAL|20261107113000||ORU^R01|MSG-0002|P|2.5\rPID|1||1001^^^HIS||Perez^Carlos||19800412|M\rPV1|1|E|||||MED-01^Vega^Laura||||||||||||V-S1-0150|||||||||||||||||||||||||202611071100\rOBR|1|||718-7^Hemoglobina^LN\rOBX|1|NM|718-7^Hemoglobina^LN||13.8|g/dL|||||F\r"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test(\"entregado o duplicado\", () => pm.expect([\"entregado\",\"duplicado\"]).to.include(d.resultado));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 · ADT inválido (debe rechazarse)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{hsb}}/hsb/hl7",
+              "host": [
+                "{{hsb}}/hsb/hl7"
+              ]
+            },
+            "description": "Esperado: rechazado con 3 motivos (documento no numérico, sexo no válido, diagnóstico sin mapeo a CIE-10).",
+            "body": {
+              "mode": "raw",
+              "raw": "MSH|^~\\&|HIS_SEDE3|SEDE3|HSB|CENTRAL|20261107120000||ADT^A01|MSG-0003|P|2.5\rPID|1||ABC123^^^HIS||Lora^Pedro||19851130|X\rPV1|1|O|||||MED-01^Vega^Laura||||||||||||V-S3-0200|||||||||||||||||||||||||202611071200\rDG1|1||DIARREA^Diarrea^L||20261107|A\r"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test(\"rechazado\", () => pm.expect([\"rechazado\",\"duplicado\"]).to.include(d.resultado));",
+                  "if (d.resultado === \"rechazado\") pm.test(\"3 motivos\", () => pm.expect(d.motivos).to.have.lengthOf(3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 · CSV legado de la sede 3",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/csv"
+              }
+            ],
+            "url": {
+              "raw": "{{hsb}}/hsb/csv?sede=3",
+              "host": [
+                "{{hsb}}/hsb/csv?sede=3"
+              ]
+            },
+            "description": "Esperado: 3 entregados (1008, 1009, 1010) y 2 rechazados (dx sin mapeo; documento de 2 dígitos).",
+            "body": {
+              "mode": "raw",
+              "raw": "documento;nombre;sexo;nacimiento;dx_local;fecha;triage;profesional\n1008;Camila Suarez Pineda;F;1996-02-10;DIARREA;2026-11-07T08:30;3;MED-01\n1009;Ricardo Mendoza Lara;M;1971-07-19;HIPERTENSION;2026-11-07T09:10;;MED-02\n1010;Sofia Blanco Mesa;F;2004-12-01;ASMA;2026-11-07T09:45;4;MED-01\n1011;Tomas Ortiz Vega;M;1988-05-23;DOLOR MISTERIOSO;2026-11-07T10:05;2;MED-02\n12;Nombre Corto;M;1990-01-01;CEFALEA;2026-11-07T10:30;;MED-01\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test(\"5 filas\", () => pm.expect(d.filas).to.eql(5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 · Reenviar el 01 (idempotencia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{hsb}}/hsb/hl7",
+              "host": [
+                "{{hsb}}/hsb/hl7"
+              ]
+            },
+            "description": "Esperado: duplicado. No se crea un segundo paciente.",
+            "body": {
+              "mode": "raw",
+              "raw": "MSH|^~\\&|HIS_SEDE2|SEDE2|HSB|CENTRAL|20261107101500||ADT^A01|MSG-0001|P|2.5\rPID|1||1007^^^HIS||Rojas^Andrea||19900214|F\rPV1|1|O|||||MED-02^Ruiz^Mateo||||||||||||V-S2-0101|||||||||||||||||||||||||202611071015\rDG1|1||J45.9^Asma^I10||20261107|A\r"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"duplicado\", () => pm.expect(pm.response.json().resultado).to.eql(\"duplicado\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 · Validar sin entregar (dry-run contra HAPI)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{hsb}}/hsb/validar?formato=hl7v2&contra_hapi=true",
+              "host": [
+                "{{hsb}}/hsb/validar?formato=hl7v2&contra_hapi=true"
+              ]
+            },
+            "description": "Devuelve el Bundle generado y el resultado de $validate de HAPI.",
+            "body": {
+              "mode": "raw",
+              "raw": "MSH|^~\\&|HIS_SEDE2|SEDE2|HSB|CENTRAL|20261107101500||ADT^A01|MSG-0001|P|2.5\rPID|1||1007^^^HIS||Rojas^Andrea||19900214|F\rPV1|1|O|||||MED-02^Ruiz^Mateo||||||||||||V-S2-0101|||||||||||||||||||||||||202611071015\rDG1|1||J45.9^Asma^I10||20261107|A\r"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json().resultados[0];",
+                  "pm.test(\"válido para el bus\", () => pm.expect(r.valido).to.be.true);",
+                  "pm.test(\"válido para HAPI\", () => pm.expect(r.validacion_hapi.valido).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 · Estado del bus",
+      "item": [
+        {
+          "name": "Mensajes de la cola",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hsb}}/hsb/mensajes?limite=50",
+              "host": [
+                "{{hsb}}/hsb/mensajes?limite=50"
+              ]
+            },
+            "description": "Todos los mensajes con su estado, intentos, motivos y latencia."
+          }
+        },
+        {
+          "name": "Mensajes rechazados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hsb}}/hsb/mensajes?estado=rechazado",
+              "host": [
+                "{{hsb}}/hsb/mensajes?estado=rechazado"
+              ]
+            },
+            "description": "Un mensaje inválido no se pierde: queda con su motivo."
+          }
+        },
+        {
+          "name": "Cola de mensajes muertos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hsb}}/hsb/muertos",
+              "host": [
+                "{{hsb}}/hsb/muertos"
+              ]
+            },
+            "description": "Los que agotaron los 4 intentos. Se pueden reencolar."
+          }
+        },
+        {
+          "name": "Terminologías y ConceptMap",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hsb}}/hsb/terminologia",
+              "host": [
+                "{{hsb}}/hsb/terminologia"
+              ]
+            },
+            "description": "Mapeo local → CIE-10 y → LOINC, publicado como ConceptMap de FHIR."
+          }
+        },
+        {
+          "name": "Tabla de reglas de validación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hsb}}/hsb/reglas",
+              "host": [
+                "{{hsb}}/hsb/reglas"
+              ]
+            },
+            "description": "La tabla que pide la plantilla v7."
+          }
+        },
+        {
+          "name": "Normalizar el legado de la sede 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/bus/migrar?sede=1",
+              "host": [
+                "{{api}}/api/v1/bus/migrar?sede=1"
+              ]
+            },
+            "description": "Sube la cobertura FHIR de la sede de 0 % a 100 %."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 · Consulta unificada de las 3 sedes",
+      "item": [
+        {
+          "name": "Historia unificada del paciente 1001",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_medico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/historia/1001",
+              "host": [
+                "{{api}}/api/v1/historia/1001"
+              ]
+            },
+            "description": "Una sola consulta recorre las tres sedes. El paciente 1001 tiene atenciones en todas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test(\"encontrado\", () => pm.expect(d.encontrado).to.be.true);",
+                  "pm.test(\"las 3 sedes\", () => pm.expect(d.resumen.sedes_con_registro).to.have.members([1,2,3]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "¿En qué sedes existe el paciente?",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_admision}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/pacientes/1001/sedes",
+              "host": [
+                "{{api}}/api/v1/pacientes/1001/sedes"
+              ]
+            },
+            "description": "Detección de duplicados entre sedes. La regla es el documento exacto."
+          }
+        },
+        {
+          "name": "Buscar por nombre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_admision}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/pacientes/buscar?nombre=perez",
+              "host": [
+                "{{api}}/api/v1/pacientes/buscar?nombre=perez"
+              ]
+            },
+            "description": "Busca en las tres sedes a la vez y agrupa por documento."
+          }
+        },
+        {
+          "name": "Cobertura FHIR por sede",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api}}/api/v1/datos/cobertura",
+              "host": [
+                "{{api}}/api/v1/datos/cobertura"
+              ]
+            },
+            "description": "Público. 0 % al arrancar, 100 % tras normalizar."
+          }
+        },
+        {
+          "name": "EXPLAIN de la consulta distribuida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_medico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/datos/explain?documento=1001",
+              "host": [
+                "{{api}}/api/v1/datos/explain?documento=1001"
+              ]
+            },
+            "description": "Evidencia de que el plan usa la clave de acceso (Index Scan, no Seq Scan)."
+          }
+        },
+        {
+          "name": "Prueba de transacción atómica (ACID)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_medico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/datos/prueba-acid?sede=1",
+              "host": [
+                "{{api}}/api/v1/datos/prueba-acid?sede=1"
+              ]
+            },
+            "description": "Escribe usuario y atencion y falla a la mitad: no debe quedar nada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"atómica\", () => pm.expect(pm.response.json().atomica).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · Reporte de HC",
+      "item": [
+        {
+          "name": "Reporte del paciente 1001 (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/reporte/1001",
+              "host": [
+                "{{api}}/api/v1/reporte/1001"
+              ]
+            },
+            "description": "Por sede, con cobertura de campos, faltantes y sello SHA-256."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test(\"3 sedes\", () => pm.expect(d.sedes).to.have.lengthOf(3));",
+                  "pm.test(\"sello de 64 caracteres\", () => pm.expect(d.sello_integridad).to.have.lengthOf(64));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte imprimible (HTML)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/reporte/1001/html",
+              "host": [
+                "{{api}}/api/v1/reporte/1001/html"
+              ]
+            },
+            "description": "HTML con hoja de estilo de impresión: Ctrl+P para PDF."
+          }
+        },
+        {
+          "name": "Bundle FHIR del paciente (document)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/reporte/1001/bundle",
+              "host": [
+                "{{api}}/api/v1/reporte/1001/bundle"
+              ]
+            },
+            "description": "Bundle tipo document con Composition y una sección por sede."
+          }
+        },
+        {
+          "name": "Validar el Bundle contra HAPI",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/reporte/1001/bundle/validar",
+              "host": [
+                "{{api}}/api/v1/reporte/1001/bundle/validar"
+              ]
+            },
+            "description": "$validate del servidor de referencia."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"válido\", () => pm.expect(pm.response.json().valido).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 · Vista Paciente",
+      "item": [
+        {
+          "name": "Mi historia unificada",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_paciente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/paciente/mi-historia",
+              "host": [
+                "{{api}}/api/v1/paciente/mi-historia"
+              ]
+            },
+            "description": "El paciente solo ve la suya."
+          }
+        },
+        {
+          "name": "Quién accedió a mi historia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_paciente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/paciente/mis-accesos",
+              "host": [
+                "{{api}}/api/v1/paciente/mis-accesos"
+              ]
+            },
+            "description": "Habeas data: el titular conoce el uso de sus datos."
+          }
+        },
+        {
+          "name": "Mi Bundle FHIR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_paciente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/paciente/mi-bundle",
+              "host": [
+                "{{api}}/api/v1/paciente/mi-bundle"
+              ]
+            },
+            "description": "El paciente descarga su historia en FHIR."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7 · Seguridad: permitido y denegado",
+      "item": [
+        {
+          "name": "Matriz de permisos por rol",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api}}/auth/matriz",
+              "host": [
+                "{{api}}/auth/matriz"
+              ]
+            },
+            "description": "La tabla de la Fase 4, publicada por la API."
+          }
+        },
+        {
+          "name": "Quién soy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_medico}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/auth/yo",
+              "host": [
+                "{{api}}/auth/yo"
+              ]
+            },
+            "description": "Claims y permisos del token."
+          }
+        },
+        {
+          "name": "DENEGADO · paciente pide la historia de otro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_paciente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/historia/1001",
+              "host": [
+                "{{api}}/api/v1/historia/1001"
+              ]
+            },
+            "description": "Esperado 403. Se detiene en la API, no en la pantalla, y deja evento de auditoría."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DENEGADO · admisionista escribe un diagnóstico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_admision}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/medico/diagnostico",
+              "host": [
+                "{{api}}/api/v1/medico/diagnostico"
+              ]
+            },
+            "description": "Esperado 403. El admisionista no ve ni escribe contenido clínico.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"documento_id\": 1001, \"atencion_id\": 1}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DENEGADO · médico abre una atención",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_medico}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/medico/atencion",
+              "host": [
+                "{{api}}/api/v1/medico/atencion"
+              ]
+            },
+            "description": "Esperado 403. Abrir atenciones es de admisión (matriz de la Fase 4).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"documento_id\": 1001, \"fecha_ingreso\": \"2026-11-08 10:00:00\"}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DENEGADO · sin token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api}}/api/v1/historia/1001",
+              "host": [
+                "{{api}}/api/v1/historia/1001"
+              ]
+            },
+            "description": "Esperado 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8 · Auditoría encadenada",
+      "item": [
+        {
+          "name": "Verificar la cadena",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/auditoria/verificar",
+              "host": [
+                "{{api}}/api/v1/auditoria/verificar"
+              ]
+            },
+            "description": "Recalcula cada hash y señala el primer evento alterado."
+          }
+        },
+        {
+          "name": "Últimos eventos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/auditoria?limite=50",
+              "host": [
+                "{{api}}/api/v1/auditoria?limite=50"
+              ]
+            },
+            "description": "quién, cuándo, qué, resultado y los dos hashes."
+          }
+        },
+        {
+          "name": "Un evento como AuditEvent de FHIR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/auditoria/1/fhir",
+              "host": [
+                "{{api}}/api/v1/auditoria/1/fhir"
+              ]
+            },
+            "description": "El mismo evento expresado en el estándar."
+          }
+        }
+      ]
+    },
+    {
+      "name": "9 · Plataforma y observabilidad",
+      "item": [
+        {
+          "name": "Tablero de estado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/plataforma/estado",
+              "host": [
+                "{{api}}/api/v1/plataforma/estado"
+              ]
+            },
+            "description": "Nodos, cobertura FHIR, métricas del bus y verificación de la auditoría."
+          }
+        },
+        {
+          "name": "Salud de la API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api}}/health",
+              "host": [
+                "{{api}}/health"
+              ]
+            },
+            "description": "ok, degradado o caido, con cada dependencia."
+          }
+        },
+        {
+          "name": "Salud del bus",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hsb}}/health",
+              "host": [
+                "{{hsb}}/health"
+              ]
+            },
+            "description": "Igual, desde el bus."
+          }
+        },
+        {
+          "name": "Métricas de la API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api}}/metrics",
+              "host": [
+                "{{api}}/metrics"
+              ]
+            },
+            "description": "Formato de texto de Prometheus."
+          }
+        },
+        {
+          "name": "Métricas del bus (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hsb}}/metrics.json",
+              "host": [
+                "{{hsb}}/metrics.json"
+              ]
+            },
+            "description": "Latencia, fallidos, duplicados y mensajes por estado."
+          }
+        },
+        {
+          "name": "Apagar el nodo de la sede 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/plataforma/nodos/2/stop",
+              "host": [
+                "{{api}}/api/v1/plataforma/nodos/2/stop"
+              ]
+            },
+            "description": "Solo el rol auditor. Queda en la auditoría."
+          }
+        },
+        {
+          "name": "Encender el nodo de la sede 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tok_auditor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{api}}/api/v1/plataforma/nodos/2/start",
+              "host": [
+                "{{api}}/api/v1/plataforma/nodos/2/start"
+              ]
+            },
+            "description": "El bus entrega solo lo que quedó pendiente."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 · HAPI FHIR directo",
+      "item": [
+        {
+          "name": "CapabilityStatement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hapi}}/metadata",
+              "host": [
+                "{{hapi}}/metadata"
+              ]
+            },
+            "description": "Debe decir fhirVersion 4.0.1."
+          }
+        },
+        {
+          "name": "Patient por documento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hapi}}/Patient?identifier=1007",
+              "host": [
+                "{{hapi}}/Patient?identifier=1007"
+              ]
+            },
+            "description": "Tras reenviar el mensaje, total sigue siendo 1."
+          }
+        },
+        {
+          "name": "Observation de laboratorio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hapi}}/Observation/obs-V-S1-0150-7187",
+              "host": [
+                "{{hapi}}/Observation/obs-V-S1-0150-7187"
+              ]
+            },
+            "description": "LOINC 718-7 = 13,8 g/dL."
+          }
+        },
+        {
+          "name": "Condition en CIE-10",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hapi}}/Condition/cond-V-S2-0101-J459",
+              "host": [
+                "{{hapi}}/Condition/cond-V-S2-0101-J459"
+              ]
+            },
+            "description": "J45.9, asma."
+          }
+        },
+        {
+          "name": "Todo lo del paciente 1001",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hapi}}/Patient/pac-1001/$everything",
+              "host": [
+                "{{hapi}}/Patient/pac-1001/$everything"
+              ]
+            },
+            "description": "Operación estándar de FHIR."
+          }
+        }
+      ]
+    }
+  ]
+}
