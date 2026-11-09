@@ -46,13 +46,14 @@ El historial está organizado por fases, no en un único commit final:
 
 | Commit | Qué entrega |
 | --- | --- |
-| `d63e7d2` | Estado base: el repositorio de referencia tal como se recibió |
-| `8ac50a2` | Fases 1–3: estructura, capa FHIR y bus de integración |
-| `99d154e` | Fases 4–5: seguridad, auditoría, consulta unificada, reporte y las cuatro vistas |
-| `036c007` | Las 96 pruebas y los 4 defectos que destaparon |
-| `83216f6` | Documentación, diagramas, guion de demostración e infraestructura opcional |
-| `0a2b2cd` | Resultados medidos, colección de Postman y limpieza |
-| `1d8180e` | Coherencia de las vistas heredadas con las reglas de la plataforma |
+| `cf5f2c9` | Estado base: el repositorio de referencia tal como se recibió |
+| `cac0508` | Fases 1–3: estructura, capa FHIR y bus de integración |
+| `80dc3e5` | Fases 4–5: seguridad, auditoría, consulta unificada, reporte y las cuatro vistas |
+| `9c01fd4` | Las 96 pruebas y los defectos que destaparon |
+| `579d6fb` | Documentación, diagramas, guion de demostración e infraestructura opcional |
+| `9cdbd90` | Resultados medidos, colección de Postman y limpieza |
+| `91069ea` | Coherencia de las vistas heredadas con las reglas de la plataforma |
+| `28f3947` | Autoría del trabajo individual en informe, README y bitácora |
 
 ---
 
