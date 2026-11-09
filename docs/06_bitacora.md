@@ -1,57 +1,65 @@
 # Bitácora del proyecto
 
-Anexo exigido por el enunciado: contribución de cada integrante por commits y
-declaración del uso de asistentes de IA y de código abierto.
-
-> **Esto lo completa el equipo.** Las dos tablas de reparto están en blanco a
-> propósito: nadie más puede decir quién hizo qué. La regla del parcial es que
-> cada integrante debe poder **explicar y modificar en vivo** cualquier parte
-> que entregue, así que el reparto debe reflejar lo que de verdad pasó.
+Anexo exigido por el enunciado: contribución por commits y declaración del uso
+de asistentes de IA y de código abierto.
 
 ---
 
-## 1. Integrantes
+## 1. Autor
 
-| Integrante | Rol principal | Correo | Usuario de Git |
+| Autor | Rol | Correo | Usuario de Git |
 | --- | --- | --- | --- |
-| *(completar)* | *(p. ej. bus y capa FHIR)* | | |
-| *(completar)* | *(p. ej. datos, seguridad y vistas)* | | |
+| **Yeiner Julian Perez Vitola** | Desarrollo completo de la plataforma: capa de datos, bus, FHIR, seguridad, vistas, pruebas y documentación | grencitoop7@gmail.com | `Yeiner Julian Perez Vitola` |
 
-## 2. Reparto por fase
+**Trabajo individual.** El enunciado contempla equipos de dos estudiantes;
+este parcial se desarrolló y se sustenta de forma individual. No hay reparto
+que declarar: todas las partes son responsabilidad del autor, que debe poder
+explicarlas y modificarlas en vivo.
 
-| Fase | Qué se hizo | Responsable | Commits |
-| --- | --- | --- | --- |
-| 1. Análisis, UML y diseño | Diagramas, mapeo de campos, estructura del repositorio | | |
-| 2. Datos distribuidos y FHIR | Esquemas por sede, datos sintéticos, normalizador | | |
-| 3. HSB / middleware | Lectores HL7 y CSV, validador, cola, entrega, métricas | | |
-| 4. Seguridad y resiliencia | JWT y roles, auditoría encadenada, degradación, observabilidad | | |
-| 5. Prototipo e informe | Las cuatro vistas, pruebas, informe y demostración | | |
+## 2. Trabajo por fase
 
-### Cómo sacar los commits de cada integrante
+| Fase | Qué se hizo | Dónde quedó |
+| --- | --- | --- |
+| 1. Análisis, UML y diseño | Auditoría del repositorio de referencia frente al enunciado, estructura exigida (`docs/`, `infra/`, `hsb/`, `fhir/`, `db/`, `app/`, `tests/`, `ejemplos/`), los 4 diagramas UML más el de arquitectura, mapeo de 26 campos y tabla de decisiones | `docs/`, `docs/uml/` |
+| 2. Datos distribuidos y FHIR | Un nodo PostgreSQL por sede con su esquema y datos sintéticos (cobertura FHIR en 0 %), almacén central, normalizador a FHIR R4, cliente HAPI y terminologías | `db/`, `fhir/`, `comun/` |
+| 3. HSB / middleware | Lectores HL7 v2 y CSV legado, validador con motivos, cola persistente con idempotencia, reintentos con retroceso exponencial, cola de mensajes muertos, entrega a HAPI y a la sede, y métricas | `hsb/` |
+| 4. Seguridad y resiliencia | JWT con 4 roles y matriz de permisos verificada en la API, auditoría encadenada por hash con verificador, consulta unificada con degradación, `/health` y `/metrics` | `comun/seguridad.py`, `comun/auditoria.py`, `app/auth.py`, `app/consulta_unificada.py` |
+| 5. Prototipo e informe | Vistas Paciente y Reporte de HC, sesión y permisos en las vistas heredadas, Reporte con cobertura y sello, 96 pruebas, informe, guion de demostración y etiqueta `v1.0` | `app/templates/`, `app/reporte.py`, `tests/`, `docs/` |
+
+### Cómo mostrar el historial en la sustentación
 
 ```bash
-# Resumen por autor
+# Resumen de commits
 git shortlog -sne
 
-# Commits de un integrante, con fecha y archivos tocados
-git log --author="NOMBRE" --pretty=format:"%h %ad %s" --date=short --stat
+# Los commits por fase, con fecha
+git log --pretty=format:"%h %ad %s" --date=short
 
-# Líneas añadidas y borradas por autor
-git log --author="NOMBRE" --pretty=tformat: --numstat \
-  | awk '{a+=$1; b+=$2} END {print "añadidas:", a, "borradas:", b}'
+# Qué cambió en un commit concreto
+git show --stat <hash>
+
+# La etiqueta de entrega
+git tag -n20 v1.0
 ```
 
-El enunciado pide que el repositorio muestre **commits de todos los
-integrantes a lo largo de las cinco fases**, no un único commit final. Si al
-revisar `git shortlog -sne` el reparto está desbalanceado, conviene arreglarlo
-antes de entregar: que cada quien haga suyos los archivos que va a sustentar.
+El historial está organizado por fases, no en un único commit final:
+
+| Commit | Qué entrega |
+| --- | --- |
+| `d63e7d2` | Estado base: el repositorio de referencia tal como se recibió |
+| `8ac50a2` | Fases 1–3: estructura, capa FHIR y bus de integración |
+| `99d154e` | Fases 4–5: seguridad, auditoría, consulta unificada, reporte y las cuatro vistas |
+| `036c007` | Las 96 pruebas y los 4 defectos que destaparon |
+| `83216f6` | Documentación, diagramas, guion de demostración e infraestructura opcional |
+| `0a2b2cd` | Resultados medidos, colección de Postman y limpieza |
+| `1d8180e` | Coherencia de las vistas heredadas con las reglas de la plataforma |
 
 ---
 
 ## 3. Declaración de uso de asistentes de IA
 
-El enunciado permite usar asistentes de IA si se declaran, y exige que el
-integrante pueda explicar y modificar en vivo lo que entregue.
+El enunciado permite usar asistentes de IA si se declaran, y exige poder
+explicar y modificar en vivo lo que se entrega.
 
 ### Qué se hizo con asistencia de IA
 
@@ -61,30 +69,29 @@ trabajo sobre el repositorio, con estas tareas:
 | Tarea | Resultado |
 | --- | --- |
 | Auditar el proyecto heredado contra el enunciado y las cinco guías por fase | Lista de lo que faltaba y de lo que no concordaba |
-| Reestructurar el repositorio a la estructura exigida (`docs/`, `infra/`, `hsb/`, `fhir/`, `db/`, `app/`, `tests/`, `ejemplos/`) | Movimiento de archivos con `git mv`, conservando el historial |
+| Reestructurar el repositorio a la estructura exigida | Movimiento de archivos con `git mv`, conservando el historial |
 | Escribir el bus (lectores HL7 v2 y CSV, validador, cola con reintentos, entrega) | `hsb/` |
 | Escribir el normalizador a FHIR R4 y el cliente HAPI | `fhir/` |
 | Escribir la seguridad por rol, la auditoría encadenada y la consulta unificada | `comun/`, `app/auth.py`, `app/consulta_unificada.py` |
 | Escribir las vistas Paciente y Reporte de HC, y añadir sesión a las heredadas | `app/templates/` |
-| Escribir las 96 pruebas y corregir los cuatro defectos que encontraron | `tests/` |
-| Escribir esta documentación y generar los diagramas | `docs/` |
+| Escribir las 96 pruebas y corregir los defectos que encontraron | `tests/` |
+| Escribir la documentación y generar los diagramas | `docs/` |
 
 ### Qué NO hizo la IA
 
-* **No se inventaron referencias bibliográficas.** Las de la sección 13 del
-  informe son fuentes primarias y normativa colombiana, y están marcadas con
-  un aviso explícito de que el equipo debe abrirlas y verificarlas antes de
-  entregar. Las fuentes académicas de Latinoamérica quedaron en blanco a
-  propósito: las busca y las lee el equipo.
+* **No se inventaron referencias bibliográficas.** Las de la sección 13.4 del
+  informe son fuentes primarias y normativa colombiana, y llevan un aviso
+  explícito de que hay que abrirlas y verificarlas antes de entregar. Las
+  fuentes académicas de Latinoamérica quedaron en blanco a propósito.
 * **No se usaron datos reales de pacientes.** Todo es sintético.
 * **No se inventaron resultados.** Las cifras de
   [07_resultados_medidos.md](07_resultados_medidos.md) salen de ejecutar el
-  sistema; el comando que las produce está junto a cada una.
+  sistema; el comando que produce cada una está junto a ella.
 
-### Qué tiene que hacer el equipo antes de sustentar
+### Preparación para la sustentación
 
-La nota de sustentación es individual y se evalúa que cada integrante
-**explique y modifique en vivo** lo que entrega. Recorrido mínimo recomendado:
+La nota de sustentación es individual y se evalúa explicar y **modificar en
+vivo** cualquier parte entregada. Recorrido mínimo recomendado:
 
 1. Leer de punta a punta [hsb/cola.py](../hsb/cola.py) y
    [hsb/entrega.py](../hsb/entrega.py): son el corazón del parcial y donde
@@ -94,7 +101,8 @@ La nota de sustentación es individual y se evalúa que cada integrante
 3. Leer [comun/auditoria.py](../comun/auditoria.py) y poder explicar la
    fórmula del hash y qué detecta el verificador.
 4. Leer [comun/seguridad.py](../comun/seguridad.py): es la tabla que el
-   docente puede pedir modificar en vivo.
+   docente puede pedir modificar en vivo (quitar un permiso a un rol,
+   `docker compose restart app` y mostrar el 403).
 5. Correr las pruebas y romper una a propósito, para ver qué dice.
 6. Ensayar el guion de [05_guion_demo.md](05_guion_demo.md) completo, con
    cronómetro.
@@ -141,3 +149,5 @@ Defectos encontrados por las propias pruebas y corregidos antes de entregar:
 | 4 | El bus sobreescribía datos del legado (un `ORU` degradaba el nombre y movía la fecha del encuentro) | El bus completa lo que falta, no pisa lo que ya está (`hsb/entrega.py`) |
 | 5 | Índices únicos parciales incompatibles con `ON CONFLICT`, que rompían la carga inicial | Índices no parciales; PostgreSQL ya trata los NULL como distintos (`db/sede/01_esquema.sql`) |
 | 6 | El contenedor de la API no arrancaba por una incompatibilidad de versiones en el extra de MCP | MCP pasó a ser opcional: si falla, la API arranca igual (`app/main.py`) |
+| 7 | Las vistas de admisión y registro exigían documentos de 6 a 15 dígitos, contra la regla de la plataforma (4 a 15) y los datos del contrato | Validación alineada con `hsb/validador.py` |
+| 8 | La vista médica mostraba «Nodo 1» calculado por rango de documento, que dejó de ser la regla | Ahora muestra en qué sedes tiene registros el paciente |

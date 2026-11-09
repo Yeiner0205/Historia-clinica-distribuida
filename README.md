@@ -6,8 +6,7 @@ sistema legado y emite datos en formatos distintos (HL7 v2 y CSV). La
 historia clínica de un mismo paciente está fraccionada entre las tres. Esta
 plataforma la unifica **sin reemplazar los sistemas legados**.
 
-> **Equipo:** *(completar los dos nombres en [docs/06_bitacora.md](docs/06_bitacora.md))*
-> **Versión:** v1.0 · **Datos:** 100 % sintéticos
+> **Autor:** Yeiner Julian Perez Vitola · **Versión:** v1.0 · **Datos:** 100 % sintéticos
 
 ---
 
@@ -294,7 +293,7 @@ cp .env.example .env     # y editarlo; .env no se versiona
 | [docs/03_decisiones_arquitectura.md](docs/03_decisiones_arquitectura.md) | Cada componente frente a su requisito y a sus alternativas; CAP |
 | [docs/04_matriz_requisitos.md](docs/04_matriz_requisitos.md) | RF1–RF6 y los RNF con el comando que los verifica |
 | [docs/05_guion_demo.md](docs/05_guion_demo.md) | Guion de la sustentación de 15 minutos |
-| [docs/06_bitacora.md](docs/06_bitacora.md) | Reparto del equipo y declaración de uso de IA |
+| [docs/06_bitacora.md](docs/06_bitacora.md) | Trabajo por fase y declaración de uso de IA |
 | [docs/07_resultados_medidos.md](docs/07_resultados_medidos.md) | Latencia, mensajes por minuto, fallidos y cobertura |
 | [docs/uml/](docs/uml/) | Los 4 diagramas UML y el de arquitectura, en SVG y PlantUML |
 
@@ -302,10 +301,11 @@ cp .env.example .env     # y editarlo; .env no se versiona
 
 ## Qué falta por hacer (declarado, no escondido)
 
-* **Dos cosas que solo puede hacer el equipo:** completar los nombres y el
-  reparto en la bitácora, y **verificar las referencias** del informe —la
-  regla del parcial dice que no se aceptan fuentes que el equipo no abrió—.
-* Capturas reales de las cuatro vistas para la sección de interfaces.
+* **Verificar las referencias** del informe y añadir dos o tres fuentes de
+  Latinoamérica: sección 13.4 de [docs/01_informe.md](docs/01_informe.md). La
+  regla del parcial dice que no se aceptan fuentes que no se hayan abierto.
+* Capturas reales de las cuatro vistas para la sección de interfaces (la
+  lista está al final de [docs/05_guion_demo.md](docs/05_guion_demo.md)).
 * Bonus no implementados: anclaje en Hyperledger Fabric, Kubernetes en
   Minikube, pruebas de carga medidas, y Prometheus con Grafana (los
   `/metrics` ya están listos; en [infra/](infra/) quedan las plantillas).

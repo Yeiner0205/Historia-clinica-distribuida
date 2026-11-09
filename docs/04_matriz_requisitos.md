@@ -191,5 +191,5 @@ Los `/metrics` salen en formato de texto de Prometheus; hay además
 | Apagar una sede no detiene la vista unificada | Cumplido | RNF2 de arriba |
 | El verificador detecta una fila de auditoría alterada | Cumplido | `scripts/alterar_auditoria_demo.sh` + verificador |
 | El Reporte de HC se genera para un paciente de las 3 sedes | Cumplido | `/api/v1/reporte/1001` |
-| Informe completo en la plantilla v7 con referencias APA 7 | **Falta el equipo** | [01_informe.md](01_informe.md): completar autores y verificar las fuentes |
+| Informe completo en la plantilla v7 con referencias APA 7 | **Pendiente** | [01_informe.md](01_informe.md) sección 13.4: verificar las 14 fuentes y añadir 2 o 3 de Latinoamérica |
 | README con pasos, usuarios de prueba y etiqueta v1.0 | Cumplido | [README.md](../README.md) |

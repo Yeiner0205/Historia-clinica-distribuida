@@ -4,11 +4,10 @@
 Estructura de la plantilla v7. Cada sección indica la fase en la que se entrega.
 
 > **Cómo usar este documento.** Es el contenido del informe, listo para pasar a
-> la plantilla v7 del curso. Antes de entregar hay dos cosas que el equipo debe
-> completar a mano y que nadie más puede completar por ustedes:
-> **(1)** los nombres y el reparto de trabajo en [06_bitacora.md](06_bitacora.md), y
-> **(2)** la verificación de cada referencia de la sección 13 —la regla del
-> parcial dice que no se aceptan fuentes que el equipo no abrió—.
+> la plantilla v7 del curso. Antes de entregar queda **una** cosa pendiente que
+> nadie más puede hacer por usted: **verificar cada referencia de la
+> sección 13.4 y añadir las fuentes de Latinoamérica que faltan**. La regla del
+> parcial es explícita: no se aceptan referencias que no se hayan abierto.
 
 ---
 
@@ -18,8 +17,10 @@ Estructura de la plantilla v7. Cada sección indica la fase en la que se entrega
 **Título (14 palabras).** Plataforma distribuida de interoperabilidad clínica
 con FHIR R4 y bus de integración para tres sedes.
 
-**Autores.** *(completar: nombres, programa y correo institucional de los dos
-integrantes)*
+**Autor.** Yeiner Julian Perez Vitola — Ingeniería de Sistemas — grencitoop7@gmail.com
+
+*Trabajo individual.* El enunciado contempla equipos de dos estudiantes; este
+parcial se desarrolló y se sustenta de forma individual.
 
 ### Resumen
 
@@ -219,12 +220,12 @@ proyecto se construye dentro de ese marco: datos mínimos, FHIR como formato
 de intercambio y control de acceso por rol con registro de quién consultó
 qué.
 
-> **Pendiente del equipo.** Para la entrega hay que añadir aquí dos o tres
-> fuentes académicas de Latinoamérica y Colombia (artículos o informes sobre
-> adopción de FHIR en la región) y **leerlas**. La regla del parcial es
-> explícita: no se aceptan referencias que el equipo no abrió. No las
-> inventen ni las copien de una lista: búsquenlas, ábranlas y citen lo que
-> efectivamente dicen.
+> **PENDIENTE 1 de 2 — añadir aquí dos o tres fuentes de Latinoamérica.**
+> Artículos o informes sobre adopción de FHIR o interoperabilidad en salud en
+> la región, **leídos**. La regla del parcial es explícita: no se aceptan
+> referencias que no se hayan abierto. No las invente ni las copie de una
+> lista: búsquelas, ábralas y cite lo que efectivamente dicen. Después,
+> añádalas también a la sección 13.4 en formato APA 7.
 
 ### 4.3 Comparación de motores de integración
 
@@ -239,7 +240,7 @@ lo que se hizo en este trabajo.
 | Curva de aprendizaje | Baja si solo se consume | Media (interfaz gráfica propia) | Media-alta | Alta (DSL de rutas) | Baja para quien sabe Python |
 | Observabilidad | Logs y `$validate` | Panel propio | Panel propio | JMX y métricas | `/health` y `/metrics` propios, formato Prometheus |
 | Se versiona en Git | Configuración sí | Los canales viven en su base | Parcial | Sí | Todo, incluidas las pruebas |
-| Licencia | Apache 2.0 | MPL 2.0 (edición abierta) | Apache 2.0 | Apache 2.0 | Código del equipo |
+| Licencia | Apache 2.0 | MPL 2.0 (edición abierta) | Apache 2.0 | Apache 2.0 | Código propio |
 | **Decisión** | **Se usa** como servidor FHIR y validador | Descartado: la configuración no se versiona ni se explica línea por línea | Descartado: resuelve más de lo que pide el alcance | Descartado: añade la JVM y un DSL nuevo | **Se construye**: es lo que el parcial evalúa |
 
 El razonamiento completo está en
@@ -482,9 +483,10 @@ La pantalla de inicio de sesión (`/login`) es común y lleva a cada rol a su
 vista. El tablero de nodos del repositorio de referencia se conserva como
 pestaña de estado dentro del Reporte de HC, tal como pide el enunciado.
 
-> **Pendiente del equipo.** Insertar aquí las capturas reales de las cuatro
+> **Pendiente — capturas.** Insertar aquí las capturas reales de las cuatro
 > vistas y del tablero. Se toman con el sistema levantado; la lista de
-> capturas recomendadas está en [05_guion_demo.md](05_guion_demo.md).
+> capturas recomendadas está al final de
+> [05_guion_demo.md](05_guion_demo.md).
 
 ### 8.2 Accesibilidad
 
@@ -739,11 +741,12 @@ volúmenes grandes por sede. Son las tres preguntas que seguirían.
 
 ### 13.4 Referencias (APA 7)
 
-> **Antes de entregar: verifiquen cada una.** Abran el enlace, confirmen el
-> año y la versión, y borren las que no hayan leído. La regla del parcial es
-> que no se aceptan referencias que el equipo no abrió. Las que siguen son
-> fuentes primarias y normativa vigente, elegidas porque se pueden consultar
-> en línea y porque el trabajo las usó de verdad; aun así, **compruébenlas**.
+> **PENDIENTE 2 de 2 — verifique cada referencia antes de entregar.** Abra el
+> enlace, confirme el año y la versión, y borre las que no haya leído. La
+> regla del parcial es que no se aceptan referencias que no se hayan abierto.
+> Las que siguen son fuentes primarias y normativa vigente, elegidas porque se
+> pueden consultar en línea y porque el trabajo las usó de verdad; aun así,
+> **compruébelas una por una**.
 
 Brewer, E. A. (2000). *Towards robust distributed systems* [Discurso de
 apertura]. ACM Symposium on Principles of Distributed Computing (PODC),
@@ -795,9 +798,11 @@ Smile CDR. (2024). *HAPI FHIR: The open source FHIR API for Java*
 Tanenbaum, A. S., y Van Steen, M. (2017). *Distributed systems: Principles
 and paradigms* (3.ª ed.). Pearson.
 
-**Faltan por añadir (trabajo del equipo):** dos o tres fuentes académicas de
-Latinoamérica y Colombia sobre adopción de FHIR o interoperabilidad en salud
-en la región. Búsquenlas, ábranlas y cítenlas en este mismo formato.
+**Faltan por añadir:** dos o tres fuentes académicas de Latinoamérica y
+Colombia sobre adopción de FHIR o interoperabilidad en salud en la región.
+Búsquelas, ábralas y cítelas en este mismo formato, en orden alfabético
+entre las de arriba. Con las 14 que ya están, basta con dos más para superar
+con holgura el mínimo de 8 que pide la rúbrica.
 
 ### 13.5 Anexos
 

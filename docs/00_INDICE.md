@@ -3,6 +3,8 @@
 Plataforma distribuida de interoperabilidad clínica — red de IPS con tres sedes
 (Sincelejo, Cartagena y Corozal).
 
+**Autor:** Yeiner Julian Perez Vitola · **Versión:** v1.0
+
 ## Qué hay en esta carpeta
 
 | Archivo | Qué contiene | Fase |
@@ -12,7 +14,7 @@ Plataforma distribuida de interoperabilidad clínica — red de IPS con tres sed
 | [03_decisiones_arquitectura.md](03_decisiones_arquitectura.md) | Cada componente frente al requisito que cubre y a sus alternativas | 1 |
 | [04_matriz_requisitos.md](04_matriz_requisitos.md) | RF1 a RF6 y los RNF con su evidencia verificable | 5 |
 | [05_guion_demo.md](05_guion_demo.md) | Guion de la sustentación de 15 minutos, comando por comando | 5 |
-| [06_bitacora.md](06_bitacora.md) | Contribución de cada integrante y uso declarado de IA | 1 a 5 |
+| [06_bitacora.md](06_bitacora.md) | Trabajo por fase, historial de commits y uso declarado de IA | 1 a 5 |
 | [07_resultados_medidos.md](07_resultados_medidos.md) | Latencia, mensajes por minuto, fallidos y cobertura medidos | 5 |
 | [uml/](uml/) | Los 4 diagramas UML y el de arquitectura, en imagen y fuente editable | 1 |
 | [anexos/](anexos/) | Documentación heredada del repositorio de referencia | — |
