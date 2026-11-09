@@ -1278,7 +1278,6 @@
             const edad = p.edad ?? (p.birthDate ? calcEdad(p.birthDate) : '?');
             const sexo = p.sexo || p.gender || '—';
             const mun = p.municipio_residencia || '—';
-            const nodo = p.nodo_asignado || calcNodo(doc);
 
             document.getElementById('patientHeader').innerHTML = `
       <div class="avatar-lg"><i class="ph ph-user"></i></div>
@@ -1287,7 +1286,7 @@
         <div style="color:var(--text-muted);font-size:.85rem;">Doc: <strong>${doc}</strong> · ${edad} años · ${sexo}</div>
         <div class="tags">
           <span class="tag green"><i class="ph ph-map-pin"></i> ${mun}</span>
-          <span class="tag blue"><i class="ph ph-database"></i> ${nodo}</span>
+          <span class="tag blue" id="tagSedes"><i class="ph ph-database"></i> consultando sedes…</span>
           <span class="tag"><i class="ph ph-shield-check"></i> FHIR R4</span>
         </div>
       </div>
@@ -1298,11 +1297,19 @@
       </div>`;
         }
 
-        function calcNodo(doc) {
-            const d = parseInt(doc);
-            if (d < 4_000_000_000) return 'Nodo 1';
-            if (d < 7_000_000_000) return 'Nodo 2';
-            return 'Nodo 3';
+        // En qué sedes está registrado el paciente. Ya no se calcula por rango
+        // de documento: cada nodo es una sede y la historia puede estar
+        // repartida entre varias, que es justamente el problema que resuelve
+        // la plataforma.
+        function pintarSedesDelPaciente(historia) {
+            const etiqueta = document.getElementById('tagSedes');
+            if (!etiqueta) return;
+            const sedes = (historia.sedes || [])
+                .filter(s => s.disponible && (s.paciente || (s.atenciones || []).length))
+                .map(s => s.nombre);
+            etiqueta.innerHTML = sedes.length
+                ? `<i class="ph ph-database"></i> ${sedes.join(' · ')}`
+                : '<i class="ph ph-database"></i> sin registros en las sedes disponibles';
         }
 
         // ══════════════════════════════════
@@ -1374,6 +1381,8 @@
         <div class="stat-card"><div class="stat-num">${data.resumen.medicamentos || 0}</div><div class="stat-label">Medicamentos</div></div>
         <div class="stat-card"><div class="stat-num">${sedesConRegistro}/3</div><div class="stat-label">Sedes con registro</div></div>
       `;
+
+                pintarSedesDelPaciente(data);
 
                 // Aviso de degradación: si una sede no respondió, se dice.
                 const avisoSedes = document.getElementById('avisoSedes');

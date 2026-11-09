@@ -714,7 +714,7 @@
                         <label class="lbl">Número de Documento <span style="color:var(--danger)">*</span></label>
                         <div class="search-wrap">
                             <input type="text" id="numeroDocumento" placeholder="Ej: 1234567890" inputmode="numeric"
-                                pattern="[0-9]{6,15}" autocomplete="off" />
+                                pattern="[0-9]{4,15}" autocomplete="off" />
                             <button class="btn btn-primary" id="btnBuscar" onclick="buscarPaciente()">
                                 <i class="ph ph-magnifying-glass"></i> Buscar
                             </button>
@@ -1150,8 +1150,8 @@
         // ── STEP 1: Buscar paciente ──
         async function buscarPaciente() {
             const doc = document.getElementById('numeroDocumento').value.trim();
-            if (!doc || !/^\d{6,15}$/.test(doc)) {
-                showAlert('Ingrese un número de documento válido (6–15 dígitos)', 'error');
+            if (!doc || !/^\d{4,15}$/.test(doc)) {
+                showAlert('Ingrese un número de documento válido (4–15 dígitos, igual que la regla del bus)', 'error');
                 return;
             }
 
