@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hapi-fhir
+  namespace: historia-clinica
+spec:
+  selector: {app: hapi-fhir}
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hapi-fhir
+  namespace: historia-clinica
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: hapi-fhir}
+  template:
+    metadata:
+      labels: {app: hapi-fhir}
+    spec:
+      containers:
+        - name: hapi
+          image: hapiproject/hapi:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: spring.datasource.url
+              value: jdbc:postgresql://pg-central:5432/fhir_db
+            - name: spring.datasource.username
+              valueFrom: {secretKeyRef: {name: plataforma-secretos, key: PG_USER}}
+            - name: spring.datasource.password
+              valueFrom: {secretKeyRef: {name: plataforma-secretos, key: PG_PASSWORD}}
+            - name: spring.datasource.driverClassName
+              value: org.postgresql.Driver
+            - name: hapi.fhir.fhir_version
+              value: R4
+            - name: hapi.fhir.allow_external_references
+              value: "true"
+          # La imagen de HAPI no tiene shell, así que los probes van por HTTP.
+          readinessProbe:
+            httpGet: {path: /fhir/metadata, port: 8080}
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 20
+          livenessProbe:
+            httpGet: {path: /fhir/metadata, port: 8080}
+            initialDelaySeconds: 180
+            periodSeconds: 30
+          resources:
+            requests: {memory: 1Gi, cpu: 500m}
+            limits: {memory: 2Gi, cpu: 2000m}

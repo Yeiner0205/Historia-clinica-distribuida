@@ -1,0 +1,164 @@
+@startuml clases
+' Modelo de datos: las 6 entidades del repositorio de referencia, las 3 que
+' añade el parcial (mensaje del bus, evento de auditoría y terminología) y
+' las de apoyo.
+skinparam backgroundColor #FFFFFF
+skinparam classAttributeIconSize 0
+hide circle
+
+package "Nodo de cada sede (base historia_clinica)" {
+  class Usuario {
+    + documento_id : BIGINT <<PK>>
+    + tipo_documento : VARCHAR
+    + nombre_completo : VARCHAR
+    + fecha_nacimiento : DATE
+    + sexo : VARCHAR
+    + sede_id : INT
+    + fhir_patient_id : VARCHAR
+  }
+  class Atencion {
+    + atencion_id : SERIAL <<PK>>
+    + documento_id : BIGINT <<FK>>
+    + sede_id : INT
+    + visita : VARCHAR <<UQ>>
+    + fecha_ingreso : TIMESTAMP
+    + clasificacion_triage : VARCHAR
+    + profesional_codigo : VARCHAR
+    + fhir_encounter_id : VARCHAR
+  }
+  class Diagnostico {
+    + diagnostico_id : SERIAL <<PK>>
+    + atencion_id : INT <<FK>>
+    + dx_local : VARCHAR
+    + cie10 : VARCHAR
+    + descripcion_cie10 : VARCHAR
+    + fhir_condition_id : VARCHAR
+  }
+  class Observacion {
+    + observacion_id : SERIAL <<PK>>
+    + atencion_id : INT <<FK>>
+    + loinc : VARCHAR
+    + valor : VARCHAR
+    + unidad : VARCHAR
+    + fhir_observation_id : VARCHAR
+  }
+  class TecnologiaSalud {
+    + tecnologia_id : UUID <<PK>>
+    + atencion_id : INT <<FK>>
+    + descripcion_medicamento : VARCHAR
+    + dosis : VARCHAR
+    + frecuencia : VARCHAR
+    + dias_tratamiento : INT
+  }
+  class Egreso {
+    + egreso_id : SERIAL <<PK>>
+    + atencion_id : INT <<FK>>
+    + fecha_salida : TIMESTAMP
+    + condicion_salida : VARCHAR
+    + sello_integridad : VARCHAR
+  }
+  class ProfesionalSalud {
+    + id_personal_salud : UUID <<PK>>
+    + codigo : VARCHAR <<UQ>>
+    + nombre : VARCHAR
+    + especialidad : VARCHAR
+    + activo : BOOLEAN
+  }
+  class SedeInfo {
+    + sede_id : INT <<PK>>
+    + codigo : VARCHAR
+    + nombre : VARCHAR
+    + municipio : VARCHAR
+  }
+}
+
+package "Almacén central (base hsb) — añadido por el parcial" {
+  class MensajeBus {
+    + mensaje_id : BIGSERIAL <<PK>>
+    + clave_idempotencia : VARCHAR <<UQ>>
+    + formato : hl7v2 | csv
+    + tipo : ADT^A01 | ORU^R01 | CSV
+    + sede_id : INT
+    + documento : VARCHAR
+    + estado : EstadoMensaje
+    + intentos : INT
+    + max_intentos : INT
+    + proximo_intento : TIMESTAMPTZ
+    + motivos : JSONB
+    + bundle : JSONB
+    + latencia_ms : INT
+  }
+  class EventoAuditoria {
+    + evento_id : BIGSERIAL <<PK>>
+    + ts : TIMESTAMPTZ
+    + actor : VARCHAR
+    + rol : VARCHAR
+    + accion : VARCHAR
+    + recurso : VARCHAR
+    + resultado : VARCHAR
+    + hash_anterior : CHAR(64)
+    + hash : CHAR(64)
+  }
+  class RefTerminologia {
+    + dx_local : VARCHAR <<PK>>
+    + cie10 : VARCHAR
+    + descripcion : VARCHAR
+  }
+  class RefLoinc {
+    + prueba_local : VARCHAR <<PK>>
+    + loinc : VARCHAR
+    + unidad : VARCHAR
+  }
+}
+
+package "Capas de aplicación" {
+  class UsuarioPlataforma {
+    + usuario : VARCHAR <<PK>>
+    + rol : paciente | admisionista | medico | auditor
+    + documento : BIGINT
+    + sede_id : INT
+    + permisos : lista
+  }
+  class BundleFHIR {
+    + id : VARCHAR
+    + type : transaction | document
+    + entry : lista de recursos
+  }
+  enum EstadoMensaje {
+    recibido
+    validado
+    transformado
+    entregado
+    rechazado
+    reintentando
+    muerto
+  }
+}
+
+Usuario "1" *-- "0..*" Atencion
+Atencion "1" *-- "0..*" Diagnostico
+Atencion "1" *-- "0..*" Observacion
+Atencion "1" *-- "0..*" TecnologiaSalud
+Atencion "1" *-- "0..1" Egreso
+ProfesionalSalud "1" -- "0..*" Atencion : atiende
+SedeInfo "1" -- "0..*" Usuario
+MensajeBus ..> BundleFHIR : produce
+MensajeBus ..> EventoAuditoria : genera
+MensajeBus --> EstadoMensaje
+RefTerminologia ..> Diagnostico : traduce a CIE-10
+RefLoinc ..> Observacion : traduce a LOINC
+EventoAuditoria --> EventoAuditoria : hash_anterior (cadena)
+UsuarioPlataforma ..> EventoAuditoria : cada acción deja un evento
+
+note bottom of Usuario
+  La identidad del paciente entre sedes es el
+  documento. Cada nodo guarda la parte de la
+  historia que atendió esa sede.
+end note
+
+note bottom of EventoAuditoria
+  hash = SHA-256(hash_anterior + contenido canónico).
+  Alterar, borrar o reordenar una fila rompe la cadena
+  desde ese punto.
+end note
+@enduml

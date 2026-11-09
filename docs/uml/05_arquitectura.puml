@@ -1,0 +1,65 @@
+@startuml arquitectura
+' Arquitectura de despliegue: de las sedes a las cuatro vistas.
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+package "1 · Sistemas legados de las sedes (no se reemplazan)" {
+  [HIS Sede 1\nSincelejo\nHL7 v2 ORU^R01] as HIS1
+  [HIS Sede 2\nCartagena\nHL7 v2 ADT^A01] as HIS2
+  [HIS Sede 3\nCorozal\nCSV legado (;)]   as HIS3
+}
+
+package "2 · Bus de integración · RF1 y RF3 · puerto 8000" {
+  [HSB\nrecepción -> validación -> transformación ->\nenrutamiento -> entrega -> auditoría] as HSB
+  [Cola persistente\nreintentos · cola de muertos · idempotencia] as COLA
+}
+
+package "3 · Almacenamiento distribuido · RF2 y RF4" {
+  database "pg_nodo1\nSede 1 · puerto 5433" as N1
+  database "pg_nodo2\nSede 2 · puerto 5434" as N2
+  database "pg_nodo3\nSede 3 · puerto 5435" as N3
+  database "pg_central\nmensaje_bus · evento_auditoria\nref_terminologia · puerto 5436" as CEN
+  [HAPI FHIR\nPatient · Encounter\nCondition · Observation\npuerto 8080] as HAPI
+}
+
+package "4 · API y seguridad · RF5 · puerto 8001" {
+  [API FastAPI\nconsulta unificada · Reporte de HC\n/health · /metrics] as API
+  [Seguridad\nJWT HS256 · 4 roles · matriz de permisos] as SEG
+  [Auditoría\ncadena SHA-256 · AuditEvent · verificador] as AUDI
+}
+
+package "5 · Las cuatro vistas por rol · RF6" {
+  [Paciente]      as V1
+  [Admisionista]  as V2
+  [Médico]        as V3
+  [Reporte de HC] as V4
+}
+
+HIS1 --> HSB : POST /hsb/hl7
+HIS2 --> HSB : POST /hsb/hl7
+HIS3 --> HSB : POST /hsb/csv?sede=3
+HSB -- COLA
+HSB --> HAPI : 1) Bundle transaction (PUT)
+HSB --> N1   : 2) UPSERT en la sede
+HSB --> N2
+HSB --> N3
+COLA --> CEN
+API --> N1
+API --> N2
+API --> N3
+API --> HAPI
+API --> CEN
+API -- SEG
+API -- AUDI
+V1 --> API
+V2 --> API
+V3 --> API
+V4 --> API
+
+note bottom of API
+  Ninguna vista habla directo con las bases de las sedes:
+  todo pasa por la API y por el bus. Si una sede cae, la
+  consulta unificada responde con las otras dos y la marca
+  como no disponible (elección AP del teorema CAP).
+end note
+@enduml

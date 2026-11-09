@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760" role="img" aria-label="Casos de uso — Plataforma de interoperabilidad clínica">
+<title>Casos de uso — Plataforma de interoperabilidad clínica</title>
+<rect width="1180" height="760" fill="#ffffff"/>
+<defs>
+  <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"           markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#14202b"/>
+  </marker>
+  <marker id="flecha-abierta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8"           markerHeight="8" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#14202b" stroke-width="1.4"/>
+  </marker>
+  <marker id="rombo" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10"           markerHeight="10" orient="auto">
+    <path d="M 0 6 L 6 1 L 12 6 L 6 11 z" fill="#ffffff"           stroke="#14202b" stroke-width="1.2"/>
+  </marker>
+</defs>
+<text x="24" y="34" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="19" font-weight="700" fill="#14202b">Casos de uso — Plataforma de interoperabilidad clínica</text>
+<text x="24" y="54" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12" font-weight="400" fill="#5b6b7a" text-anchor="start">Actores: paciente, admisionista, médico, auditor y el sistema legado de cada sede. 12 casos de uso.</text>
+<rect x="300" y="78" width="560" height="640" rx="14" fill="none" stroke="#9fb0c0" stroke-width="1.6" stroke-dasharray="8 5"/>
+<text x="580" y="100" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#5b6b7a" text-anchor="middle">Plataforma distribuida de interoperabilidad clínica</text>
+<circle cx="120" cy="150" r="9" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="159" x2="120" y2="182" stroke="#14202b" stroke-width="1.6"/>
+<line x1="107" y1="168" x2="133" y2="168" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="182" x2="109" y2="200" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="182" x2="131" y2="200" stroke="#14202b" stroke-width="1.6"/>
+<text x="120" y="218" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="600" fill="#14202b" text-anchor="middle">Paciente</text>
+<text x="120" y="233" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">persona atendida</text>
+<circle cx="120" cy="330" r="9" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="339" x2="120" y2="362" stroke="#14202b" stroke-width="1.6"/>
+<line x1="107" y1="348" x2="133" y2="348" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="362" x2="109" y2="380" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="362" x2="131" y2="380" stroke="#14202b" stroke-width="1.6"/>
+<text x="120" y="398" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="600" fill="#14202b" text-anchor="middle">Admisionista</text>
+<text x="120" y="413" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">admisión y triage</text>
+<circle cx="120" cy="520" r="9" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="529" x2="120" y2="552" stroke="#14202b" stroke-width="1.6"/>
+<line x1="107" y1="538" x2="133" y2="538" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="552" x2="109" y2="570" stroke="#14202b" stroke-width="1.6"/>
+<line x1="120" y1="552" x2="131" y2="570" stroke="#14202b" stroke-width="1.6"/>
+<text x="120" y="588" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="600" fill="#14202b" text-anchor="middle">Médico</text>
+<text x="120" y="603" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">profesional de salud</text>
+<circle cx="1050" cy="170" r="9" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1050" y1="179" x2="1050" y2="202" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1037" y1="188" x2="1063" y2="188" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1050" y1="202" x2="1039" y2="220" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1050" y1="202" x2="1061" y2="220" stroke="#14202b" stroke-width="1.6"/>
+<text x="1050" y="238" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="600" fill="#14202b" text-anchor="middle">Sistema de sede</text>
+<text x="1050" y="253" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">HIS legado (HL7/CSV)</text>
+<circle cx="1050" cy="480" r="9" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1050" y1="489" x2="1050" y2="512" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1037" y1="498" x2="1063" y2="498" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1050" y1="512" x2="1039" y2="530" stroke="#14202b" stroke-width="1.6"/>
+<line x1="1050" y1="512" x2="1061" y2="530" stroke="#14202b" stroke-width="1.6"/>
+<text x="1050" y="548" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="600" fill="#14202b" text-anchor="middle">Auditor</text>
+<text x="1050" y="563" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">auditoría y operación</text>
+<ellipse cx="470" cy="150" rx="108" ry="34" fill="#fde9ef" stroke="#b5325c" stroke-width="1.5"/>
+<text x="470" y="147" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Consultar mi historia</text>
+<text x="470" y="162" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">unificada de las 3 sedes</text>
+<ellipse cx="470" cy="230" rx="108" ry="34" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.5"/>
+<text x="470" y="234" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Descargar Bundle FHIR</text>
+<ellipse cx="470" cy="300" rx="108" ry="34" fill="#fff6d8" stroke="#a98300" stroke-width="1.5"/>
+<text x="470" y="297" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Ver quién accedió</text>
+<text x="470" y="312" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">a mi historia</text>
+<ellipse cx="690" cy="150" rx="108" ry="34" fill="#fdf0e3" stroke="#c47a1c" stroke-width="1.5"/>
+<text x="690" y="147" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Enviar mensaje al bus</text>
+<text x="690" y="162" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">HL7 v2 / CSV legado</text>
+<ellipse cx="690" cy="230" rx="108" ry="34" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.5"/>
+<text x="690" y="227" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Normalizar a FHIR R4</text>
+<text x="690" y="242" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">Patient/Encounter/Condition/Observation</text>
+<ellipse cx="470" cy="380" rx="108" ry="34" fill="#fde9ef" stroke="#b5325c" stroke-width="1.5"/>
+<text x="470" y="377" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Buscar o registrar paciente</text>
+<text x="470" y="392" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">detecta duplicados entre sedes</text>
+<ellipse cx="470" cy="455" rx="108" ry="34" fill="#fde9ef" stroke="#b5325c" stroke-width="1.5"/>
+<text x="470" y="459" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Abrir atención con triage</text>
+<ellipse cx="690" cy="380" rx="108" ry="34" fill="#fdf0e3" stroke="#c47a1c" stroke-width="1.5"/>
+<text x="690" y="377" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Ver estado del bus</text>
+<text x="690" y="392" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">mensajes por estado</text>
+<ellipse cx="470" cy="530" rx="108" ry="34" fill="#fde9ef" stroke="#b5325c" stroke-width="1.5"/>
+<text x="470" y="527" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Registrar diagnóstico CIE-10</text>
+<text x="470" y="542" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">ordenar, formular y egresar</text>
+<ellipse cx="470" cy="610" rx="108" ry="34" fill="#fde9ef" stroke="#b5325c" stroke-width="1.5"/>
+<text x="470" y="607" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Generar Reporte de HC</text>
+<text x="470" y="622" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">cobertura y sello de integridad</text>
+<ellipse cx="690" cy="530" rx="108" ry="34" fill="#fff6d8" stroke="#a98300" stroke-width="1.5"/>
+<text x="690" y="527" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Verificar la auditoría</text>
+<text x="690" y="542" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">cadena de hash</text>
+<ellipse cx="690" cy="610" rx="108" ry="34" fill="#f1ecfb" stroke="#6b4fb5" stroke-width="1.5"/>
+<text x="690" y="607" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="600" fill="#14202b" text-anchor="middle">Apagar o encender un nodo</text>
+<text x="690" y="622" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="middle">prueba de resiliencia</text>
+<line x1="150" y1="180" x2="362" y2="150" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="180" x2="362" y2="230" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="180" x2="362" y2="300" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="360" x2="362" y2="380" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="360" x2="362" y2="455" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="360" x2="582" y2="380" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="550" x2="362" y2="150" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="550" x2="362" y2="530" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="150" y1="550" x2="362" y2="610" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="1020" y1="200" x2="798" y2="150" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="1020" y1="510" x2="798" y2="530" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="1020" y1="510" x2="798" y2="610" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="1020" y1="510" x2="578" y2="610" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="690" y1="184" x2="690" y2="196" stroke="#14202b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+<rect x="720" y="183" width="64" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="752" y="195" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">«include»</text>
+<line x1="560" y1="588" x2="626" y2="556" stroke="#14202b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+<rect x="543" y="553" width="64" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="575" y="565" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">«include»</text>
+<text x="24" y="742" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="start">«include»: enviar un mensaje al bus incluye normalizarlo a FHIR R4; generar el Reporte de HC incluye verificar la auditoría.</text>
+</svg>

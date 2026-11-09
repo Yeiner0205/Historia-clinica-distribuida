@@ -1,0 +1,35 @@
+# Configuración de Prometheus para la plataforma.
+# Los dos servicios ya exponen /metrics en formato de texto de Prometheus.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    plataforma: historia-clinica-distribuida
+
+scrape_configs:
+  - job_name: api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app:8001"]
+        labels:
+          servicio: api
+
+  - job_name: hsb
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["hsb:8000"]
+        labels:
+          servicio: bus
+
+# Métricas que publican los servicios y que valen la pena en un tablero:
+#   hsb_mensajes_total{estado}          mensajes por estado del bus
+#   hsb_mensajes_sede_total{sede,estado}
+#   hsb_latencia_media_ms               latencia de extremo a extremo
+#   hsb_latencia_p95_ms
+#   hsb_porcentaje_fallidos
+#   hsb_duplicados_detectados           idempotencia en acción
+#   hsb_en_cola                         pendientes de entrega
+#   sede_disponible{sede,nombre}        1 = la sede responde
+#   sede_latencia_ms{sede}
+#   cobertura_fhir_pct{sede,nombre}     avance de la migración
+#   api_peticiones_total / api_denegaciones_total

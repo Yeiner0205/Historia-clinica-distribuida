@@ -1,342 +1,330 @@
-# Sistema de Historia Clínica Distribuida
+# Plataforma distribuida de interoperabilidad clínica
 
-## 🌍 Language / Idioma
+Parcial final de Sistemas Distribuidos. Una red de IPS con tres sedes
+—**Sincelejo**, **Cartagena** y **Corozal**— donde cada sede conserva su
+sistema legado y emite datos en formatos distintos (HL7 v2 y CSV). La
+historia clínica de un mismo paciente está fraccionada entre las tres. Esta
+plataforma la unifica **sin reemplazar los sistemas legados**.
 
-- **Español** - Estás aquí
-- **[English](README.en.md)** - English version
-- **[📚 Índice de Documentación](INDICE.md)** | **[📚 Documentation Index](INDEX.en.md)**
+> **Equipo:** *(completar los dos nombres en [docs/06_bitacora.md](docs/06_bitacora.md))*
+> **Versión:** v1.0 · **Datos:** 100 % sintéticos
 
 ---
 
-## 🏥 Descripción General
+## Levantar todo con un comando
 
-Sistema completo de historia clínica distribuida que implementa fragmentación horizontal de datos sobre PostgreSQL, con una interfaz web de monitoreo y gestión en tiempo real. El sistema simula un entorno de base de datos distribuida utilizando contenedores Docker y un middleware Python para coordinar consultas distribuidas.
+Requisitos: Docker y Docker Compose. Nada más.
 
-## 🏗️ Arquitectura del Sistema
-
-### Componentes Principales
-
-- **3 Nodos PostgreSQL**: Contenedores independientes con fragmentación de datos por `documento_id`
-- **API FastAPI**: Backend para gestión de nodos y ejecución de consultas distribuidas
-- **Frontend Web**: Dashboard en tiempo real para monitoreo y control
-- **Middleware Python**: Lógica de coordinación de consultas distribuidas
-
-### Esquema de Fragmentación
-
-Los datos se distribuyen según el rango de `documento_id`:
-- **Nodo 1** (Puerto 5433): `documento_id < 4,000,000,000`
-- **Nodo 2** (Puerto 5434): `4,000,000,000 ≤ documento_id < 7,000,000,000`
-- **Nodo 3** (Puerto 5435): `documento_id ≥ 7,000,000,000`
-
-## 🛠️ Stack Tecnológico
-
-### Backend
-- **Python 3.8+**: Lenguaje principal
-- **FastAPI**: Framework API REST
-- **PostgreSQL 15**: Sistema de base de datos
-- **Psycopg2**: Driver PostgreSQL para Python
-- **Docker SDK**: Gestión de contenedores
-- **Uvicorn**: Servidor ASGI
-
-### Frontend
-- **HTML5/CSS3/JavaScript**: Tecnologías web estándar
-- **Phosphor Icons**: Biblioteca de iconos
-- **CSS Grid/Flexbox**: Diseño responsivo
-- **Fetch API**: Comunicación asíncrona
-
-### Infraestructura
-- **Docker**: Contenerización
-- **Docker Compose**: Orquestación de servicios
-- **Volúmenes Docker**: Persistencia de datos
-
-## 📊 Modelo de Datos
-
-### Tablas Principales
-
-1. **usuario**: Información demográfica del paciente
-2. **atencion**: Registro de eventos de atención médica
-3. **tecnologia_salud**: Medicamentos y procedimientos
-4. **diagnostico**: Diagnósticos de ingreso y egreso
-5. **egreso**: Información de alta médica
-6. **profesional_salud**: Datos del personal de salud
-
-### Relaciones
-- `usuario` ← `atencion` ← `tecnologia_salud`
-- `atencion` ← `diagnostico`
-- `atencion` ← `egreso`
-- `profesional_salud` ← `tecnologia_salud`
-
-## 🚀 Configuración y Despliegue
-
-### Prerrequisitos
 ```bash
-# Instalar Docker y Docker Compose
-# Verificar instalación
-docker --version
-docker-compose --version
-
-# Instalar Python 3.8+
-python3 --version
-
-# Clonar repositorio
-git clone <repository-url>
-cd historia-clinica-distribuida
+docker compose up -d
+./scripts/esperar_servicios.sh
 ```
 
-### Instalación de Dependencias
+HAPI FHIR tarda alrededor de un minuto en arrancar; el script espera por él.
+Cuando termine:
+
+| Qué | Dónde |
+| --- | --- |
+| Inicio de sesión | http://localhost:8001/login |
+| Inicio (todas las vistas) | http://localhost:8001/home |
+| Documentación de la API | http://localhost:8001/docs |
+| Bus de integración | http://localhost:8000/ |
+| Servidor FHIR | http://localhost:8080/fhir/metadata |
+
+Para empezar de cero (borra los datos y vuelve a cargar los sintéticos):
+
 ```bash
-# Crear entorno virtual (recomendado)
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate  # Windows
-
-# Instalar dependencias Python
-pip install fastapi uvicorn psycopg2-binary docker pydantic
+docker compose down -v && docker compose up -d
 ```
-
-### Despliegue de Infraestructura
-```bash
-# Levantar nodos PostgreSQL
-docker-compose up -d
-
-# Verificar estado de contenedores
-docker-compose ps
-
-# Cargar esquema en cada nodo
-psql -h localhost -p 5433 -U admin -d historia_clinica -f nodo1.sql
-psql -h localhost -p 5434 -U admin -d historia_clinica -f nodo2.sql
-psql -h localhost -p 5435 -U admin -d historia_clinica -f nodo3.sql
-```
-
-### Iniciar Aplicación
-```bash
-# Iniciar servidor API
-python app.py
-# O con uvicorn directamente
-uvicorn app:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### Acceso a la Aplicación
-- **Dashboard Web**: http://localhost:8000
-- **API Endpoints**: http://localhost:8000/api
-- **Documentación API**: http://localhost:8000/docs
-
-## 🔧 Funcionalidades
-
-### Gestión de Nodos
-- **Monitoreo en tiempo real**: Estado y disponibilidad de cada nodo
-- **Control de contenedores**: Start/Stop/Restart de nodos individuales
-- **Visualización de puertos**: Mapeo de puertos de cada nodo
-
-### Consultas Distribuidas
-- **Ejecución transparente**: Queries SQL ejecutados en todos los nodos
-- **Agregación de resultados**: Combinación automática de resultados
-- **Manejo de fallos**: Continúa operando con nodos caídos
-- **Estado de nodos**: Reporte de disponibilidad por consulta
-
-### Interfaz Web
-- **Dashboard responsivo**: Diseño adaptativo para diferentes dispositivos
-- **Actualización automática**: Polling cada 3 segundos
-- **Feedback visual**: Indicadores de estado y progreso
-- **Consola SQL**: Editor de consultas con resaltado de sintaxis
-
-## 📁 Estructura del Proyecto
-
-```
-historia-clinica-distribuida/
-├── app.py                    # API FastAPI principal
-├── middleware.py             # Lógica de consultas distribuidas
-├── docker-compose.yml       # Orquestación de contenedores
-├── requirements.txt          # Dependencias Python
-├── nodo1.sql                # Esquema para nodo 1
-├── nodo2.sql                # Esquema para nodo 2
-├── nodo3.sql                # Esquema para nodo 3
-├── templates/
-│   └── index.html          # Interfaz web principal
-├── static/
-│   ├── style.css           # Estilos CSS
-│   └── script.js           # Lógica JavaScript frontend
-└── README.md               # Documentación del proyecto
-```
-
-## 🔌 API Endpoints
-
-### Gestión de Nodos
-- `GET /api/nodes` - Listar estado de todos los nodos
-- `POST /api/nodes/{node_id}/{action}` - Control de nodos (start/stop/restart)
-
-### Consultas Distribuidas
-- `POST /api/execute-query` - Ejecutar consulta en todos los nodos
-
-### Web Interface
-- `GET /` - Dashboard principal
-- `GET /static/*` - Recursos estáticos
-
-## 🧪 Ejemplos de Uso
-
-### Consultas SQL de Ejemplo
-```sql
--- Consulta básica de usuarios
-SELECT documento_id, nombre_completo, edad FROM usuario;
-
--- Consulta con JOINs
-SELECT u.nombre_completo, a.entidad_salud, a.fecha_ingreso
-FROM usuario u 
-JOIN atencion a ON u.documento_id = a.documento_id;
-
--- Consulta de diagnósticos
-SELECT d.diagnostico_ingreso, d.diagnostico_egreso
-FROM diagnostico d
-JOIN atencion a ON d.atencion_id = a.atencion_id;
-```
-
-### Operaciones CRUD
-```sql
--- Insertar usuario (se dirige al nodo correcto automáticamente)
-INSERT INTO usuario (documento_id, nombre_completo, edad, sexo)
-VALUES (123456789, 'Juan Pérez', 35, 'M');
-
--- Actualizar datos
-UPDATE usuario SET edad = 36 WHERE documento_id = 123456789;
-
--- Eliminar registro
-DELETE FROM usuario WHERE documento_id = 123456789;
-```
-
-## 🔍 Monitoreo y Diagnóstico
-
-### Verificación de Estado
-```bash
-# Estado de contenedores
-docker-compose ps
-
-# Logs de contenedores
-docker-compose logs pg_nodo1
-docker-compose logs pg_nodo2
-docker-compose logs pg_nodo3
-
-# Conexión directa a nodos
-psql -h localhost -p 5433 -U admin -d historia_clinica
-psql -h localhost -p 5434 -U admin -d historia_clinica
-psql -h localhost -p 5435 -U admin -d historia_clinica
-```
-
-### Métricas de Rendimiento
-- **Latencia de consultas**: Tiempo de respuesta distribuida
-- **Disponibilidad**: Porcentaje de nodos operativos
-- **Distribución de datos**: Balance de carga entre nodos
-
-## 🛡️ Consideraciones de Seguridad
-
-### Configuración por Defecto
-- **Credenciales**: admin/admin (solo para desarrollo)
-- **Red interna**: Comunicación entre contenedores Docker
-- **CORS**: Permitido desde cualquier origen (solo desarrollo)
-
-### Recomendaciones para Producción
-- Cambiar credenciales por defecto
-- Implementar SSL/TLS
-- Configurar firewall y redes privadas
-- Auditoría de accesos y logs
-
-## 🔄 Mantenimiento
-
-### Tareas Regulares
-```bash
-# Limpiar contenedores e imágenes no utilizadas
-docker system prune -a
-
-# Realizar backup de volúmenes
-docker run --rm -v pg_data_nodo1:/data -v $(pwd):/backup alpine tar czf /backup/nodo1_backup.tar.gz -C /data .
-
-# Actualizar imágenes
-docker-compose pull
-docker-compose up -d
-```
-
-### Escalado
-- **Horizontal**: Agregar nuevos nodos modificando `docker-compose.yml`
-- **Vertical**: Aumentar recursos de contenedores existentes
-- **Rebalanceo**: Redistribuir datos según nuevas particiones
-
-## 🐛 Solución de Problemas
-
-### Docker Compose
-Si los nodos PostgreSQL no arrancan o la app no conecta:
-
-1. **Comprobar Docker y Compose**
-   - Docker: `docker --version`
-   - Compose v2: `docker compose version` → usar `docker compose up -d`
-   - Compose v1: `docker-compose --version` → usar `docker-compose up -d`
-
-2. **Script de verificación** (recomendado)
-   ```bash
-   ./verificar-docker.sh
-   ```
-   Comprueba Docker, puertos 5433–5435, levanta los contenedores y opcionalmente prueba la conexión.
-
-3. **Puertos ocupados**  
-   Si 5433, 5434 o 5435 están en uso, detén el proceso o cambia los puertos en `docker-compose.yml` (y en `middleware.py` si cambias).
-
-4. **Estado y salud**
-   ```bash
-   docker compose ps   # o docker-compose ps
-   ```
-   Los tres nodos deberían estar `Up` y `healthy` (healthcheck con `pg_isready`).
-
-5. **Logs**
-   ```bash
-   docker compose logs pg_nodo1
-   docker compose logs -f pg_nodo2   # seguir en tiempo real
-   ```
-
-### Problemas Comunes
-1. **Nodos no inician**: Verificar disponibilidad de puertos 5433-5435; ejecutar `./verificar-docker.sh`.
-2. **Conexión rechazada**: Confirmar que contenedores estén corriendo y `healthy`; esperar unos segundos tras `up -d`.
-3. **Query sin resultados**: Verificar que datos existan en el rango correcto; cargar esquema con `nodo1.sql`, `nodo2.sql`, `nodo3.sql`.
-
-### Depuración
-```bash
-# Verificar conectividad
-telnet localhost 5433
-telnet localhost 5434
-telnet localhost 5435
-
-# Probar conexión PostgreSQL
-python -c "import psycopg2; print('Driver OK')"
-
-# Verificar logs de aplicación
-python app.py  # Ejecutar en modo verbose
-```
-
-## 📈 Mejoras Futuras
-
-### Planeadas
-- [ ] Autenticación y autorización de usuarios
-- [ ] Interfaz de administración avanzada
-- [ ] Métricas de rendimiento y graficos
-- [ ] Sistema de backup automático
-- [ ] Sharding automático basado en carga
-
-### Opcionales
-- [ ] Migración a Kubernetes
-- [ ] Implementación de Redis para caché
-- [ ] Sistema de notificaciones en tiempo real
-- [ ] API GraphQL alternativa
-
-## 📄 Licencia
-
-Este proyecto es para fines educativos y de demostración. Consulte la licencia específica para términos de uso.
-
-## 👥 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor:
-1. Fork del repositorio
-2. Crear rama de características
-3. Enviar Pull Request con descripción detallada
 
 ---
 
-**Autor**: Sistema de Historia Clínica Distribuida  
-**Versión**: 2.0.0  
-**Última actualización**: 2026-02-17
+## Usuarios de prueba
+
+Son sintéticos y las claves se cambian con variables de entorno en un archivo
+`.env` que **no se versiona** (`cp .env.example .env`).
+
+| Usuario | Clave | Rol | Vista a la que entra |
+| --- | --- | --- | --- |
+| `paciente1007` | `paciente123` | paciente | [Mi historia](http://localhost:8001/paciente) |
+| `admision2` | `admision123` | admisionista | [Admisión y triage](http://localhost:8001/admision) |
+| `medico1` | `medico123` | medico | [Consulta médica](http://localhost:8001/medico) |
+| `auditor1` | `auditor123` | auditor | [Reporte de HC y tablero](http://localhost:8001/reporte-hc) |
+
+Los permisos se verifican **en la API**, no en la pantalla: cambiar el HTML o
+llamar con `curl` no da acceso. La matriz completa está en
+`GET /auth/matriz`.
+
+---
+
+## Las cuatro vistas
+
+| Vista | Qué hace | Qué no puede hacer |
+| --- | --- | --- |
+| **Paciente** | Ver su historia unificada de las 3 sedes, descargar su Bundle FHIR y ver quién accedió a su historia | Ver datos de otros pacientes o modificar registros |
+| **Admisionista** | Buscar o registrar al paciente, detectar duplicados entre sedes, abrir la atención con su triage y ver el estado de envío al bus | Ver diagnósticos ni notas clínicas |
+| **Médico** | Consultar la historia unificada, registrar diagnóstico CIE-10, formular y registrar el egreso con sello de integridad | Alterar la auditoría ni abrir atenciones (eso es de admisión) |
+| **Reporte de HC** | Reporte por sede con cobertura de campos, sello de integridad, impresión y Bundle FHIR; incluye el **tablero de estado** de la plataforma | Editar contenido clínico |
+
+---
+
+## Qué hay dentro
+
+```
+app/       API y las cuatro vistas (FastAPI + plantillas)   :8001
+hsb/       bus de integración: lectores, validador, cola    :8000
+fhir/      normalizador a FHIR R4, terminologías, cliente HAPI
+comun/     sedes, acceso a datos, seguridad y auditoría
+db/        esquemas y datos sintéticos (sedes y central)
+docs/      informe, diagramas UML y anexos
+infra/     Keycloak, observabilidad y Kubernetes (opcionales)
+tests/     96 pruebas unitarias y de integración
+ejemplos/  mensajes del contrato y colección de pruebas
+scripts/   espera de servicios, demostración y verificador
+```
+
+| Servicio | Contenedor | Puerto | Para qué |
+| --- | --- | --- | --- |
+| Sede 1 · Sincelejo | `pg_nodo1` | 5433 | Base legada de la sede |
+| Sede 2 · Cartagena | `pg_nodo2` | 5434 | Base legada de la sede |
+| Sede 3 · Corozal | `pg_nodo3` | 5435 | Base legada de la sede |
+| Almacén central | `pg_central` | 5436 | Cola del bus, auditoría, terminologías y base de HAPI |
+| Servidor FHIR | `hapi_fhir_hc` | 8080 | HAPI FHIR R4 y su validador |
+| Bus de integración | `hsb` | 8000 | HL7 v2 y CSV → FHIR |
+| API y vistas | `app_hc` | 8001 | Consulta unificada y las cuatro vistas |
+
+El almacén central está **fuera de las sedes a propósito**: si una sede cae,
+el bus y la auditoría siguen funcionando.
+
+---
+
+## Enviar los mensajes de ejemplo
+
+Los archivos de `ejemplos/` son el contrato del parcial: cada uno debe
+producir un resultado concreto.
+
+```bash
+# HL7 v2 ADT^A01 de la sede 2 → Patient 1007, Encounter y Condition J45.9
+curl -X POST --data-binary @ejemplos/01_adt_a01_valido_sede2.hl7 \
+     http://localhost:8000/hsb/hl7
+
+# HL7 v2 ORU^R01 de la sede 1 → Observation LOINC 718-7 = 13,8 g/dL
+curl -X POST --data-binary @ejemplos/02_oru_r01_laboratorio_sede1.hl7 \
+     http://localhost:8000/hsb/hl7
+
+# HL7 v2 inválido → rechazado con 3 motivos
+curl -X POST --data-binary @ejemplos/03_adt_a01_invalido.hl7 \
+     http://localhost:8000/hsb/hl7
+
+# CSV legado de la sede 3 → 3 entregados y 2 rechazados
+curl -X POST --data-binary @ejemplos/04_sede3_legado.csv \
+     "http://localhost:8000/hsb/csv?sede=3"
+```
+
+Para ver cómo quedaron:
+
+```bash
+curl -s http://localhost:8000/hsb/mensajes | python3 -m json.tool
+curl -s http://localhost:8000/metrics.json | python3 -m json.tool
+```
+
+La colección completa de pruebas está en
+[ejemplos/coleccion_pruebas.sh](ejemplos/coleccion_pruebas.sh) (y en
+[ejemplos/postman_collection.json](ejemplos/postman_collection.json) para
+quien prefiera Postman).
+
+---
+
+## Probar lo que el parcial evalúa
+
+### Normalizar el legado: la cobertura FHIR pasa de 0 % a 100 %
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8001/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"usuario":"auditor1","password":"auditor123"}' \
+  | python3 -c 'import json,sys;print(json.load(sys.stdin)["access_token"])')
+
+curl -s http://localhost:8001/api/v1/datos/cobertura | python3 -m json.tool   # 0 %
+for s in 1 2 3; do
+  curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+       "http://localhost:8001/api/v1/bus/migrar?sede=$s" > /dev/null
+done
+curl -s http://localhost:8001/api/v1/datos/cobertura | python3 -m json.tool   # 100 %
+```
+
+O desde el tablero: **Reporte de HC → Estado de la plataforma → Normalizar sede N**.
+
+### Reenviar un mensaje: no se duplica
+
+```bash
+curl -X POST --data-binary @ejemplos/01_adt_a01_valido_sede2.hl7 http://localhost:8000/hsb/hl7
+curl -X POST --data-binary @ejemplos/01_adt_a01_valido_sede2.hl7 http://localhost:8000/hsb/hl7
+#   la segunda responde "duplicado"
+curl -s "http://localhost:8080/fhir/Patient?identifier=1007" | grep -o '"total":[0-9]*'
+#   "total":1
+```
+
+### Apagar una sede: la vista sigue respondiendo
+
+```bash
+docker compose stop pg_nodo2
+
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8001/api/v1/historia/1001 \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); print("parcial:", d["parcial"], "| disponibles:", d["sedes_disponibles"])'
+#   parcial: True | disponibles: [1, 3]
+
+docker compose start pg_nodo2   # el bus entrega solo lo que quedó pendiente
+```
+
+### Reintentos y cola de mensajes muertos
+
+```bash
+docker compose stop hapi-fhir
+curl -X POST --data-binary @ejemplos/06_oru_r01_reintento_sede1.hl7 http://localhost:8000/hsb/hl7
+#   "resultado": "reintentando"
+sleep 20
+curl -s http://localhost:8000/hsb/muertos | python3 -m json.tool   # pasó a "muerto"
+docker compose start hapi-fhir
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+     http://localhost:8001/api/v1/bus/mensajes/<id>/reencolar       # vuelve y se entrega
+```
+
+### Alterar la auditoría: el verificador lo detecta
+
+```bash
+docker compose exec app python scripts/verificar_auditoria.py   # ÍNTEGRA  (salida 0)
+./scripts/alterar_auditoria_demo.sh                              # cambia una fila
+docker compose exec app python scripts/verificar_auditoria.py   # ALTERADA (salida 1)
+```
+
+También funciona con borrado: `./scripts/alterar_auditoria_demo.sh 5 --borrar`.
+
+### Acceso permitido y denegado
+
+```bash
+TP=$(curl -s -X POST http://localhost:8001/auth/login -H 'Content-Type: application/json' \
+      -d '{"usuario":"paciente1007","password":"paciente123"}' \
+      | python3 -c 'import json,sys;print(json.load(sys.stdin)["access_token"])')
+
+curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $TP" \
+     http://localhost:8001/api/v1/paciente/mi-historia    # 200
+curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $TP" \
+     http://localhost:8001/api/v1/historia/1001           # 403 + evento de auditoría
+```
+
+### Transacción atómica y plan de la consulta distribuida
+
+```bash
+curl -s -X POST -H "Authorization: Bearer $TOKEN" \
+     "http://localhost:8001/api/v1/datos/prueba-acid?sede=1" | python3 -m json.tool
+curl -s -H "Authorization: Bearer $TOKEN" \
+     "http://localhost:8001/api/v1/datos/explain?documento=1001" | python3 -m json.tool
+```
+
+---
+
+## La demostración completa
+
+```bash
+./scripts/demo.sh
+```
+
+Ejecuta el guion de la Fase 5 paso a paso, esperando un Enter entre pasos
+para poder explicar. Con `AUTO=1 ./scripts/demo.sh` corre de principio a fin
+sin detenerse. El guion narrado está en [docs/05_guion_demo.md](docs/05_guion_demo.md).
+
+---
+
+## Pruebas
+
+```bash
+docker compose exec app pytest tests -v                       # las 96
+docker compose exec app pytest tests -v -m "not integracion"  # solo unitarias
+```
+
+| Archivo | Casos | Qué cubre |
+| --- | --- | --- |
+| `test_normalizador.py` | 13 | Normalizador a FHIR, con dos casos inválidos |
+| `test_lectores_y_validador.py` | 16 | HL7 v2, CSV y el contrato de `ejemplos/LEEME.md` |
+| `test_terminologia_y_auditoria.py` | 23 | CIE-10, LOINC, `ConceptMap` y cadena de hash |
+| `test_integracion_hsb.py` | 10 | Bus de extremo a extremo, idempotencia, `$validate` |
+| `test_integracion_api.py` | 34 | Permisos por rol, consulta unificada, reporte, ACID |
+
+---
+
+## Observabilidad
+
+| Servicio | Salud | Métricas |
+| --- | --- | --- |
+| API | http://localhost:8001/health | http://localhost:8001/metrics |
+| Bus | http://localhost:8000/health | http://localhost:8000/metrics |
+
+`/health` reporta el estado de cada dependencia (las tres sedes, el almacén
+central, HAPI y el otro servicio) y distingue `ok`, `degradado` y `caido`.
+`/metrics` sale en formato de texto de Prometheus; hay `/metrics.json` para
+el tablero.
+
+---
+
+## Configuración
+
+Todo funciona sin configurar nada. Para cambiar algo:
+
+```bash
+cp .env.example .env     # y editarlo; .env no se versiona
+```
+
+| Variable | Por defecto | Para qué |
+| --- | --- | --- |
+| `JWT_SECRET` | `dev-secret-cambieme` | Firma de los tokens. **Cámbiela.** `/health` avisa si sigue el valor por defecto |
+| `PWD_PACIENTE`, `PWD_ADMISION`, `PWD_MEDICO`, `PWD_AUDITOR` | ver arriba | Claves de los usuarios de prueba |
+| `HSB_MAX_INTENTOS` | `4` | Intentos antes de la cola de muertos |
+| `HSB_ESPERA_BASE_S` | `1` | Base del retroceso exponencial (1, 2, 4, 8 s) |
+| `HSB_HL7_EXIGE_CIE10` | `true` | En HL7 el diagnóstico debe venir en CIE-10 ([por qué](docs/03_decisiones_arquitectura.md)) |
+
+---
+
+## Documentación
+
+| Documento | Qué contiene |
+| --- | --- |
+| [docs/01_informe.md](docs/01_informe.md) | Informe completo con la estructura de la plantilla v7 |
+| [docs/02_mapeo_campos.md](docs/02_mapeo_campos.md) | 26 campos: origen → tabla → recurso FHIR |
+| [docs/03_decisiones_arquitectura.md](docs/03_decisiones_arquitectura.md) | Cada componente frente a su requisito y a sus alternativas; CAP |
+| [docs/04_matriz_requisitos.md](docs/04_matriz_requisitos.md) | RF1–RF6 y los RNF con el comando que los verifica |
+| [docs/05_guion_demo.md](docs/05_guion_demo.md) | Guion de la sustentación de 15 minutos |
+| [docs/06_bitacora.md](docs/06_bitacora.md) | Reparto del equipo y declaración de uso de IA |
+| [docs/07_resultados_medidos.md](docs/07_resultados_medidos.md) | Latencia, mensajes por minuto, fallidos y cobertura |
+| [docs/uml/](docs/uml/) | Los 4 diagramas UML y el de arquitectura, en SVG y PlantUML |
+
+---
+
+## Qué falta por hacer (declarado, no escondido)
+
+* **Dos cosas que solo puede hacer el equipo:** completar los nombres y el
+  reparto en la bitácora, y **verificar las referencias** del informe —la
+  regla del parcial dice que no se aceptan fuentes que el equipo no abrió—.
+* Capturas reales de las cuatro vistas para la sección de interfaces.
+* Bonus no implementados: anclaje en Hyperledger Fabric, Kubernetes en
+  Minikube, pruebas de carga medidas, y Prometheus con Grafana (los
+  `/metrics` ya están listos; en [infra/](infra/) quedan las plantillas).
+
+---
+
+## Resolución de problemas
+
+| Síntoma | Causa y salida |
+| --- | --- |
+| `Conflict. The container name ... is already in use` | Hay contenedores de otro laboratorio con el mismo nombre: `docker ps -a` y bórrelos, o cambie `container_name` en `docker-compose.yml` |
+| El bus responde 503 «almacén central no disponible» | `pg_central` todavía arranca: `docker compose ps` y espere a que esté `healthy` |
+| `/health` dice `hapi_fhir: disponible false` | HAPI tarda ~1 min. `./scripts/esperar_servicios.sh` |
+| Las vistas redirigen siempre a `/login` | El token expiró (8 h por defecto). Vuelva a entrar |
+| Un mensaje queda en `reintentando` | Alguna dependencia está caída. `docker compose ps` y `curl localhost:8000/health` |
+| El puerto 8080 u 8001 está ocupado | Otro proyecto lo está usando: `docker ps` y apáguelo, o cambie el puerto en el compose |
+| Los datos no son los esperados | `docker compose down -v && docker compose up -d` recarga los datos sintéticos |
+
+---
+
+Datos 100 % sintéticos. Ningún dato real de pacientes entra al repositorio ni
+a la demostración.

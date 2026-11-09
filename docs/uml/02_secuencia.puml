@@ -1,0 +1,61 @@
+@startuml secuencia
+' Un mensaje HL7 v2 que llega de una sede y termina como FHIR, con el camino de error.
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+autonumber
+
+participant "Sistema de sede\n(HIS legado)" as HIS
+participant "HSB\n(bus)"                    as HSB
+participant "Validador"                     as VAL
+participant "Normalizador\nFHIR"            as NOR
+participant "HAPI FHIR"                     as HAPI
+database    "Nodo de la sede\n(PostgreSQL)" as NODO
+participant "Auditoría\n(cadena de hash)"   as AUD
+
+HIS -> HSB : POST /hsb/hl7 (ADT^A01 u ORU^R01)
+activate HSB
+HSB -> HSB : guardar en mensaje_bus\n(clave de idempotencia = MSH-10)
+HSB -> VAL : validar documento, sexo, sede, fechas, CIE-10
+activate VAL
+
+alt mensaje inválido
+  VAL --> HSB : motivos (documento no numérico, sexo no válido, dx sin CIE-10...)
+  HSB -> AUD : evento de rechazo con sus motivos
+  HSB --> HIS : rechazado + motivos
+else mensaje válido
+  VAL --> HSB : sin motivos -> estado = validado
+  deactivate VAL
+
+  HSB -> NOR : transformar
+  activate NOR
+  NOR --> HSB : Bundle transaction con PUT e ids deterministas
+  deactivate NOR
+
+  HSB -> HAPI : POST / (transaction)
+  activate HAPI
+
+  alt HAPI y la sede responden
+    HAPI --> HSB : 200 + referencias creadas
+    deactivate HAPI
+    HSB -> NODO : UPSERT usuario, atencion, diagnostico, observacion\n(una sola transacción)
+    activate NODO
+    NODO --> HSB : confirmado (o rollback completo)
+    deactivate NODO
+    HSB -> AUD : evento: quién, cuándo, qué, resultado
+    AUD --> HSB : sello = hash encadenado
+    HSB --> HIS : entregado + recursos + latencia
+  else HAPI o la sede no responden
+    HAPI --> HSB : error de red o 5xx
+    HSB -> HSB : estado = reintentando\nespera 1 s, 2 s, 4 s, 8 s
+    HSB -> HSB : tras 4 intentos -> muerto\n(cola de mensajes muertos, reencolable)
+    HSB --> HIS : reintentando / muerto
+  end
+end
+deactivate HSB
+
+note over HSB, HAPI
+  Idempotencia: la clave vive en un UNIQUE de mensaje_bus (sobrevive al
+  reinicio del bus) y los PUT sobre identificadores deterministas hacen
+  que repetir la entrega actualice en lugar de crear.
+end note
+@enduml

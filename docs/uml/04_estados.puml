@@ -1,0 +1,38 @@
+@startuml estados
+' Ciclo de vida de un mensaje en el bus (columna mensaje_bus.estado).
+skinparam backgroundColor #FFFFFF
+
+[*] --> recibido : llega a la puerta de la sede
+
+recibido     --> validado     : validación sin motivos
+recibido     --> rechazado    : motivos de validación
+validado     --> transformado : normalizado a FHIR R4
+validado     --> rechazado    : HAPI responde 4xx (no mejora reintentando)
+transformado --> entregado    : HAPI y nodo de la sede confirman
+transformado --> reintentando : fallo transitorio (red, 5xx, sede caída)
+reintentando --> transformado : toca el siguiente intento
+reintentando --> entregado    : el reintento tiene éxito
+reintentando --> muerto       : se agotaron los 4 intentos
+muerto       --> reintentando : reencolar (rol auditor o admisionista)
+
+entregado --> [*]
+rechazado --> [*]
+muerto    --> [*]
+
+note right of reintentando
+  Retroceso exponencial: 1 s, 2 s, 4 s, 8 s.
+  El trabajador de fondo reclama los mensajes
+  de forma atómica (FOR UPDATE SKIP LOCKED),
+  así dos réplicas del bus no procesan el mismo.
+end note
+
+note right of rechazado
+  Conserva sus motivos: un mensaje inválido
+  nunca se pierde en silencio.
+end note
+
+note bottom of entregado
+  Estado terminal: no se degrada. Si dos
+  entregas se cruzan, gana la que entregó.
+end note
+@enduml

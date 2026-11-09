@@ -1,0 +1,45 @@
+# ============================================================================
+# Complemento opcional (bonus): Prometheus y Grafana sobre los /metrics que la
+# plataforma ya expone.
+#
+#   docker compose -f docker-compose.yml \
+#                  -f infra/observabilidad/docker-compose.observabilidad.yml up -d
+#
+#   Prometheus: http://localhost:9090
+#   Grafana:    http://localhost:3000   (admin / admin la primera vez)
+#
+# SIN PROBAR: para reclamar el bonus hay que levantarlo, construir el tablero
+# y dejar la captura como evidencia.
+# ============================================================================
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_hc
+    ports: ["9090:9090"]
+    volumes:
+      - ./infra/observabilidad/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    restart: unless-stopped
+    networks: [red_hc]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_hc
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/observabilidad/grafana-fuente-datos.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+    depends_on: [prometheus]
+    restart: unless-stopped
+    networks: [red_hc]
+
+volumes:
+  prometheus_data:
+  grafana_data:

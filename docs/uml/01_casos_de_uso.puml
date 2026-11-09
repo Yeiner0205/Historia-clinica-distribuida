@@ -1,0 +1,53 @@
+@startuml casos_de_uso
+' Fuente editable del diagrama de casos de uso.
+' Render: plantuml 01_casos_de_uso.puml  (o pegar en https://www.plantuml.com/plantuml)
+' La imagen del informe (01_casos_de_uso.svg) se genera con generar_diagramas.py,
+' que no necesita Java ni herramientas externas.
+left to right direction
+skinparam actorStyle awesome
+skinparam backgroundColor #FFFFFF
+
+actor "Paciente"     as PAC
+actor "Admisionista" as ADM
+actor "Médico"       as MED
+actor "Auditor"      as AUD
+actor "Sistema de sede\n(HIS legado)" as HIS
+
+rectangle "Plataforma distribuida de interoperabilidad clínica" {
+  usecase "Consultar mi historia unificada"        as CU1
+  usecase "Descargar mi Bundle FHIR"               as CU2
+  usecase "Ver quién accedió a mi historia"        as CU3
+  usecase "Enviar mensaje al bus\n(HL7 v2 / CSV)"  as CU4
+  usecase "Normalizar a FHIR R4"                   as CU5
+  usecase "Buscar o registrar paciente\n(duplicados entre sedes)" as CU6
+  usecase "Abrir atención con triage"              as CU7
+  usecase "Ver estado del bus"                     as CU8
+  usecase "Registrar diagnóstico CIE-10,\nformular y egresar" as CU9
+  usecase "Generar Reporte de HC"                  as CU10
+  usecase "Verificar la auditoría"                 as CU11
+  usecase "Apagar o encender un nodo"              as CU12
+}
+
+PAC --> CU1
+PAC --> CU2
+PAC --> CU3
+ADM --> CU6
+ADM --> CU7
+ADM --> CU8
+MED --> CU1
+MED --> CU9
+MED --> CU10
+AUD --> CU10
+AUD --> CU11
+AUD --> CU12
+HIS --> CU4
+
+CU4 ..> CU5 : <<include>>
+CU10 ..> CU11 : <<include>>
+
+note bottom of CU9
+  El médico trabaja sobre una atención ya abierta
+  por admisión: la matriz de permisos del parcial
+  reserva «abrir atención» al rol admisionista.
+end note
+@enduml

@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="920" viewBox="0 0 1240 920" role="img" aria-label="Secuencia — Un mensaje HL7 v2 de una sede termina como FHIR">
+<title>Secuencia — Un mensaje HL7 v2 de una sede termina como FHIR</title>
+<rect width="1240" height="920" fill="#ffffff"/>
+<defs>
+  <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"           markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#14202b"/>
+  </marker>
+  <marker id="flecha-abierta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8"           markerHeight="8" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#14202b" stroke-width="1.4"/>
+  </marker>
+  <marker id="rombo" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10"           markerHeight="10" orient="auto">
+    <path d="M 0 6 L 6 1 L 12 6 L 6 11 z" fill="#ffffff"           stroke="#14202b" stroke-width="1.2"/>
+  </marker>
+</defs>
+<text x="24" y="34" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="19" font-weight="700" fill="#14202b">Secuencia — Un mensaje HL7 v2 de una sede termina como FHIR</text>
+<text x="24" y="54" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12" font-weight="400" fill="#5b6b7a" text-anchor="start">Camino feliz y camino de error: validación, reintento con retroceso exponencial y cola de mensajes muertos.</text>
+<rect x="17" y="80" width="156" height="48" rx="10" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.6"/>
+<text x="95" y="102" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">Sistema de sede</text>
+<text x="95" y="122" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">HIS legado</text>
+<line x1="95" y1="128" x2="95" y2="860" stroke="#9fb0c0" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="212" y="80" width="156" height="48" rx="10" fill="#fdf0e3" stroke="#c47a1c" stroke-width="1.6"/>
+<text x="290" y="102" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">HSB</text>
+<text x="290" y="122" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">bus de integración</text>
+<line x1="290" y1="128" x2="290" y2="860" stroke="#9fb0c0" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="392" y="80" width="156" height="48" rx="10" fill="#fdf0e3" stroke="#c47a1c" stroke-width="1.6"/>
+<text x="470" y="102" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">Validador</text>
+<text x="470" y="122" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">reglas del parcial</text>
+<line x1="470" y1="128" x2="470" y2="860" stroke="#9fb0c0" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="572" y="80" width="156" height="48" rx="10" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.6"/>
+<text x="650" y="102" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">Normalizador</text>
+<text x="650" y="122" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">FHIR R4</text>
+<line x1="650" y1="128" x2="650" y2="860" stroke="#9fb0c0" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="752" y="80" width="156" height="48" rx="10" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.6"/>
+<text x="830" y="102" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">HAPI FHIR</text>
+<text x="830" y="122" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">servidor FHIR</text>
+<line x1="830" y1="128" x2="830" y2="860" stroke="#9fb0c0" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="922" y="80" width="156" height="48" rx="10" fill="#f1ecfb" stroke="#6b4fb5" stroke-width="1.6"/>
+<text x="1000" y="102" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">Nodo de la sede</text>
+<text x="1000" y="122" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">PostgreSQL</text>
+<line x1="1000" y1="128" x2="1000" y2="860" stroke="#9fb0c0" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="1082" y="80" width="156" height="48" rx="10" fill="#fff6d8" stroke="#a98300" stroke-width="1.6"/>
+<text x="1160" y="102" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">Auditoría</text>
+<text x="1160" y="122" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">cadena de hash</text>
+<line x1="1160" y1="128" x2="1160" y2="860" stroke="#9fb0c0" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="284" y="160" width="12" height="660" rx="3" fill="#f3f6f9" stroke="#9fb0c0"/>
+<rect x="464" y="190" width="12" height="40" rx="3" fill="#f3f6f9" stroke="#9fb0c0"/>
+<rect x="644" y="270" width="12" height="50" rx="3" fill="#f3f6f9" stroke="#9fb0c0"/>
+<rect x="824" y="350" width="12" height="50" rx="3" fill="#f3f6f9" stroke="#9fb0c0"/>
+<rect x="994" y="560" width="12" height="50" rx="3" fill="#f3f6f9" stroke="#9fb0c0"/>
+<line x1="103" y1="165" x2="282" y2="165" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="82" y="148" width="220" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="192" y="160" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">1 POST /hsb/hl7 (ADT^A01 o ORU^R01)</text>
+<line x1="298" y1="200" x2="462" y2="200" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="231" y="183" width="298" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="380" y="195" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">2 validar: documento, sexo, sede, fechas, CIE-10</text>
+<line x1="462" y1="235" x2="298" y2="235" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="303" y="218" width="154" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="380" y="230" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">3 sin motivos → validado</text>
+<line x1="298" y1="280" x2="642" y2="280" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="288" y="263" width="364" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="470" y="275" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">4 transformar a Bundle transaction (PUT, ids deterministas)</text>
+<line x1="642" y1="320" x2="298" y2="320" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="417" y="303" width="106" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="470" y="315" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">5 Bundle FHIR R4</text>
+<line x1="298" y1="360" x2="822" y2="360" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="489" y="343" width="142" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="560" y="355" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">6 POST / (transaction)</text>
+<line x1="822" y1="400" x2="298" y2="400" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="462" y="383" width="196" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="560" y="395" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">7 201/200 + referencias creadas</text>
+<rect x="250" y="430" width="700" height="110" rx="10" fill="#fff6f6" stroke="#d98a8a" stroke-width="1.4" stroke-dasharray="7 4"/>
+<text x="265" y="452" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12" font-weight="700" fill="#9b2c2c" text-anchor="start">alt  [HAPI o la sede no responden]</text>
+<line x1="298" y1="480" x2="822" y2="480" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="492" y="463" width="136" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="560" y="475" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">7a error de red o 5xx</text>
+<text x="300" y="505" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#9b2c2c" text-anchor="start">estado = reintentando · espera 1 s, 2 s, 4 s, 8 s · tras 4 intentos → muerto (cola de mensajes muertos, reencolable)</text>
+<line x1="298" y1="570" x2="992" y2="570" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="430" y="553" width="430" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="645" y="565" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">8 UPSERT usuario, atencion, diagnostico, observacion (una transacción)</text>
+<line x1="992" y1="610" x2="298" y2="610" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="538" y="593" width="214" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="645" y="605" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">9 confirmado (o rollback completo)</text>
+<line x1="298" y1="650" x2="1152" y2="650" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="567" y="633" width="316" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="725" y="645" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">10 evento encadenado: quién, cuándo, qué, resultado</text>
+<line x1="1152" y1="690" x2="298" y2="690" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="642" y="673" width="166" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="725" y="685" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">11 sello = hash del evento</text>
+<line x1="282" y1="730" x2="103" y2="730" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="85" y="713" width="214" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="192" y="725" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">12 entregado + recursos + latencia</text>
+<rect x="250" y="770" width="700" height="62" rx="10" fill="#fff6d8" stroke="#a98300" stroke-width="1.3"/>
+<text x="265" y="792" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12" font-weight="700" fill="#14202b" text-anchor="start">Idempotencia</text>
+<text x="265" y="810" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="start">La clave es MSH-10 (o el hash de la fila del CSV) y está en un UNIQUE de mensaje_bus: el reenvío responde «duplicado»</text>
+<text x="265" y="826" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="start">y los PUT sobre ids deterministas hacen que repetir la entrega actualice en vez de crear.</text>
+<text x="24" y="890" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="start">Las vistas nunca hablan con las bases de las sedes: todo pasa por la API y por el bus.</text>
+</svg>

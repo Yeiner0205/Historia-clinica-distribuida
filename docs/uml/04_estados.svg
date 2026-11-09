@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="640" viewBox="0 0 1180 640" role="img" aria-label="Estados — Ciclo de vida de un mensaje en el bus">
+<title>Estados — Ciclo de vida de un mensaje en el bus</title>
+<rect width="1180" height="640" fill="#ffffff"/>
+<defs>
+  <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"           markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#14202b"/>
+  </marker>
+  <marker id="flecha-abierta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8"           markerHeight="8" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#14202b" stroke-width="1.4"/>
+  </marker>
+  <marker id="rombo" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10"           markerHeight="10" orient="auto">
+    <path d="M 0 6 L 6 1 L 12 6 L 6 11 z" fill="#ffffff"           stroke="#14202b" stroke-width="1.2"/>
+  </marker>
+</defs>
+<text x="24" y="34" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="19" font-weight="700" fill="#14202b">Estados — Ciclo de vida de un mensaje en el bus</text>
+<text x="24" y="54" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12" font-weight="400" fill="#5b6b7a" text-anchor="start">Los siete estados que exige la Fase 1, tal como los guarda la columna mensaje_bus.estado.</text>
+<circle cx="80" cy="200" r="11" fill="#14202b"/>
+<text x="80" y="232" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">llega a la puerta</text>
+<rect x="150" y="170" width="170" height="76" rx="18" fill="#fdf0e3" stroke="#c47a1c" stroke-width="1.6"/>
+<text x="235" y="192" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">recibido</text>
+<text x="235" y="212" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">se guarda con su clave</text>
+<text x="235" y="228" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">de idempotencia</text>
+<rect x="350" y="170" width="170" height="76" rx="18" fill="#fdf0e3" stroke="#c47a1c" stroke-width="1.6"/>
+<text x="435" y="192" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">validado</text>
+<text x="435" y="212" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">pasó las reglas</text>
+<text x="435" y="228" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">del validador</text>
+<rect x="550" y="170" width="170" height="76" rx="18" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.6"/>
+<text x="635" y="192" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">transformado</text>
+<text x="635" y="212" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">ya es un Bundle</text>
+<text x="635" y="228" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">FHIR R4</text>
+<rect x="770" y="170" width="170" height="76" rx="18" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.6"/>
+<text x="855" y="192" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">entregado</text>
+<text x="855" y="212" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">está en HAPI y</text>
+<text x="855" y="228" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">en el nodo de la sede</text>
+<rect x="350" y="400" width="170" height="76" rx="18" fill="#fde9ef" stroke="#b5325c" stroke-width="1.6"/>
+<text x="435" y="422" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">rechazado</text>
+<text x="435" y="442" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">con sus motivos;</text>
+<text x="435" y="458" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">no se reintenta</text>
+<rect x="560" y="400" width="170" height="76" rx="18" fill="#fff6d8" stroke="#a98300" stroke-width="1.6"/>
+<text x="645" y="422" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">reintentando</text>
+<text x="645" y="442" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">espera 1 s, 2 s, 4 s, 8 s</text>
+<text x="645" y="458" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">(retroceso exponencial)</text>
+<rect x="820" y="400" width="170" height="76" rx="18" fill="#fde9ef" stroke="#b5325c" stroke-width="1.6"/>
+<text x="905" y="422" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="13" font-weight="700" fill="#14202b" text-anchor="middle">muerto</text>
+<text x="905" y="442" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">agotó los 4 intentos;</text>
+<text x="905" y="458" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11" font-weight="400" fill="#5b6b7a" text-anchor="middle">reencolable a mano</text>
+<line x1="91" y1="200" x2="150" y2="208" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<line x1="320" y1="208" x2="350" y2="208" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="270" y="191" width="130" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="335" y="203" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">validar: sin motivos</text>
+<line x1="520" y1="208" x2="550" y2="208" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="500" y="191" width="70" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="535" y="203" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">normalizar</text>
+<line x1="720" y1="208" x2="770" y2="208" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="698" y="191" width="94" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="745" y="203" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">HAPI y nodo OK</text>
+<line x1="235" y1="246" x2="350" y2="400" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="224" y="306" width="136" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="292" y="318" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">motivos de validación</text>
+<line x1="435" y1="246" x2="435" y2="400" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="397" y="306" width="76" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="435" y="318" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">4xx de HAPI</text>
+<line x1="635" y1="246" x2="645" y2="400" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="584" y="306" width="112" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="640" y="318" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">fallo transitorio</text>
+<line x1="855" y1="246" x2="700" y2="400" stroke="#14202b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+<line x1="730" y1="438" x2="820" y2="438" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<rect x="734" y="421" width="82" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="775" y="433" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">intentos = 4</text>
+<path d="M 645 400 q 0 -60 -10 -100" fill="none" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<text x="660" y="330" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="start">reintento con éxito</text>
+<path d="M 905 400 q 70 -70 -20 -120" fill="none" stroke="#14202b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+<text x="930" y="320" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="start">reencolar (rol auditor</text>
+<text x="930" y="335" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="start">o admisionista)</text>
+<circle cx="966" cy="208" r="11" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<circle cx="966" cy="208" r="6" fill="#14202b"/>
+<circle cx="546" cy="438" r="11" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<circle cx="546" cy="438" r="6" fill="#14202b"/>
+<circle cx="1016" cy="438" r="11" fill="none" stroke="#14202b" stroke-width="1.6"/>
+<circle cx="1016" cy="438" r="6" fill="#14202b"/>
+<rect x="40" y="520" width="1100" height="86" rx="10" fill="#f3f6f9" stroke="#9fb0c0"/>
+<text x="58" y="544" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="start">Invariantes</text>
+<text x="58" y="564" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="400" fill="#14202b" text-anchor="start">• Un mensaje rechazado conserva sus motivos: nunca se pierde en silencio.</text>
+<text x="58" y="582" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="400" fill="#14202b" text-anchor="start">• La clave de idempotencia es única en la base, no en memoria: sobrevive al reinicio del bus.</text>
+<text x="58" y="600" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="400" fill="#14202b" text-anchor="start">• Un estado terminal (entregado) no se degrada: si dos entregas se cruzan, gana la que entregó.</text>
+</svg>

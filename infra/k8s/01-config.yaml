@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plataforma-config
+  namespace: historia-clinica
+data:
+  USE_DOCKER_NAMES: "true"
+  PG_DB_SEDE: historia_clinica
+  PG_CENTRAL_DB: hsb
+  PG_CENTRAL_HOST: pg-central
+  HAPI_BASE_URL: http://hapi-fhir:8080/fhir
+  HSB_BASE_URL: http://hsb:8000
+  API_BASE_URL: http://app:8001
+  HSB_MAX_INTENTOS: "4"
+  HSB_ESPERA_BASE_S: "1"
+  HSB_HL7_EXIGE_CIE10: "true"
+  LOG_LEVEL: INFO
+---
+# Valores de DEMOSTRACIÓN. En un despliegue real:
+#   kubectl -n historia-clinica create secret generic plataforma-secretos \
+#     --from-literal=JWT_SECRET=... --from-literal=PG_PASSWORD=...
+apiVersion: v1
+kind: Secret
+metadata:
+  name: plataforma-secretos
+  namespace: historia-clinica
+type: Opaque
+stringData:
+  JWT_SECRET: cambie-este-secreto-por-uno-largo-y-aleatorio
+  PG_USER: admin
+  PG_PASSWORD: admin
+  PWD_PACIENTE: paciente123
+  PWD_ADMISION: admision123
+  PWD_MEDICO: medico123
+  PWD_AUDITOR: auditor123

@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="900" viewBox="0 0 1320 900" role="img" aria-label="Clases — Modelo de datos de la plataforma">
+<title>Clases — Modelo de datos de la plataforma</title>
+<rect width="1320" height="900" fill="#ffffff"/>
+<defs>
+  <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"           markerHeight="7" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#14202b"/>
+  </marker>
+  <marker id="flecha-abierta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8"           markerHeight="8" orient="auto-start-reverse">
+    <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#14202b" stroke-width="1.4"/>
+  </marker>
+  <marker id="rombo" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10"           markerHeight="10" orient="auto">
+    <path d="M 0 6 L 6 1 L 12 6 L 6 11 z" fill="#ffffff"           stroke="#14202b" stroke-width="1.2"/>
+  </marker>
+</defs>
+<text x="24" y="34" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="19" font-weight="700" fill="#14202b">Clases — Modelo de datos de la plataforma</text>
+<text x="24" y="54" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12" font-weight="400" fill="#5b6b7a" text-anchor="start">13 entidades: las 6 del repositorio de referencia, las 3 que añade el parcial (mensaje del bus, evento de auditoría y terminología) y 4 de apoyo.</text>
+<rect x="40" y="110" width="230" height="149" rx="7" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.5"/>
+<line x1="40" y1="140" x2="270" y2="140" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="155" y="130" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">Usuario</text>
+<text x="49" y="157" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ documento_id : BIGINT «PK»</text>
+<text x="49" y="172" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ tipo_documento : VARCHAR</text>
+<text x="49" y="187" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ nombre_completo : VARCHAR</text>
+<text x="49" y="202" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ fecha_nacimiento : DATE</text>
+<text x="49" y="217" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ sexo : VARCHAR</text>
+<text x="49" y="232" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ sede_id : INT</text>
+<text x="49" y="247" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ fhir_patient_id : VARCHAR</text>
+<rect x="330" y="110" width="250" height="164" rx="7" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.5"/>
+<line x1="330" y1="140" x2="580" y2="140" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="455" y="130" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">Atencion</text>
+<text x="339" y="157" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ atencion_id : SERIAL «PK»</text>
+<text x="339" y="172" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ documento_id : BIGINT «FK»</text>
+<text x="339" y="187" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ sede_id : INT</text>
+<text x="339" y="202" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ visita : VARCHAR «UQ»</text>
+<text x="339" y="217" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ fecha_ingreso : TIMESTAMP</text>
+<text x="339" y="232" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ clasificacion_triage : VARCHAR</text>
+<text x="339" y="247" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ profesional_codigo : VARCHAR</text>
+<text x="339" y="262" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ fhir_encounter_id : VARCHAR</text>
+<rect x="650" y="110" width="230" height="134" rx="7" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.5"/>
+<line x1="650" y1="140" x2="880" y2="140" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="765" y="130" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">Diagnostico</text>
+<text x="659" y="157" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ diagnostico_id : SERIAL «PK»</text>
+<text x="659" y="172" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ atencion_id : INT «FK»</text>
+<text x="659" y="187" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ dx_local : VARCHAR</text>
+<text x="659" y="202" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ cie10 : VARCHAR</text>
+<text x="659" y="217" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ descripcion_cie10 : VARCHAR</text>
+<text x="659" y="232" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ fhir_condition_id : VARCHAR</text>
+<rect x="940" y="110" width="230" height="134" rx="7" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.5"/>
+<line x1="940" y1="140" x2="1170" y2="140" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="1055" y="130" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">Observacion</text>
+<text x="949" y="157" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ observacion_id : SERIAL «PK»</text>
+<text x="949" y="172" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ atencion_id : INT «FK»</text>
+<text x="949" y="187" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ loinc : VARCHAR</text>
+<text x="949" y="202" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ valor : VARCHAR</text>
+<text x="949" y="217" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ unidad : VARCHAR</text>
+<text x="949" y="232" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ fhir_observation_id : VARCHAR</text>
+<rect x="330" y="320" width="250" height="119" rx="7" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.5"/>
+<line x1="330" y1="350" x2="580" y2="350" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="455" y="340" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">TecnologiaSalud</text>
+<text x="339" y="367" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ tecnologia_id : UUID «PK»</text>
+<text x="339" y="382" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ atencion_id : INT «FK»</text>
+<text x="339" y="397" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ descripcion_medicamento : VARCHAR</text>
+<text x="339" y="412" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ dosis / frecuencia : VARCHAR</text>
+<text x="339" y="427" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ dias_tratamiento : INT</text>
+<rect x="650" y="320" width="230" height="119" rx="7" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.5"/>
+<line x1="650" y1="350" x2="880" y2="350" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="765" y="340" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">Egreso</text>
+<text x="659" y="367" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ egreso_id : SERIAL «PK»</text>
+<text x="659" y="382" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ atencion_id : INT «FK»</text>
+<text x="659" y="397" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ fecha_salida : TIMESTAMP</text>
+<text x="659" y="412" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ condicion_salida : VARCHAR</text>
+<text x="659" y="427" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ sello_integridad : VARCHAR</text>
+<rect x="40" y="320" width="230" height="119" rx="7" fill="#e8f1fb" stroke="#2f6fb0" stroke-width="1.5"/>
+<line x1="40" y1="350" x2="270" y2="350" stroke="#2f6fb0" stroke-width="1.2"/>
+<text x="155" y="340" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">ProfesionalSalud</text>
+<text x="49" y="367" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ id_personal_salud : UUID «PK»</text>
+<text x="49" y="382" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ codigo : VARCHAR «UQ»</text>
+<text x="49" y="397" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ nombre : VARCHAR</text>
+<text x="49" y="412" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ especialidad : VARCHAR</text>
+<text x="49" y="427" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ activo : BOOLEAN</text>
+<rect x="40" y="500" width="230" height="104" rx="7" fill="#f1ecfb" stroke="#6b4fb5" stroke-width="1.5"/>
+<line x1="40" y1="530" x2="270" y2="530" stroke="#6b4fb5" stroke-width="1.2"/>
+<text x="155" y="520" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">SedeInfo</text>
+<text x="49" y="547" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ sede_id : INT «PK»</text>
+<text x="49" y="562" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ codigo : VARCHAR</text>
+<text x="49" y="577" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ nombre : VARCHAR</text>
+<text x="49" y="592" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ municipio : VARCHAR</text>
+<rect x="330" y="500" width="280" height="194" rx="7" fill="#fdf0e3" stroke="#c47a1c" stroke-width="1.5"/>
+<text x="470" y="495" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" font-style="italic" fill="#5b6b7a" text-anchor="middle">«añadida por el parcial»</text>
+<line x1="330" y1="530" x2="610" y2="530" stroke="#c47a1c" stroke-width="1.2"/>
+<text x="470" y="520" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">MensajeBus</text>
+<text x="339" y="547" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ mensaje_id : BIGSERIAL «PK»</text>
+<text x="339" y="562" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ clave_idempotencia : VARCHAR «UQ»</text>
+<text x="339" y="577" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ formato : hl7v2 | csv</text>
+<text x="339" y="592" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ tipo : ADT^A01 | ORU^R01 | CSV</text>
+<text x="339" y="607" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ sede_id : INT      + documento : VARCHAR</text>
+<text x="339" y="622" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ estado : EstadoMensaje</text>
+<text x="339" y="637" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ intentos / max_intentos : INT</text>
+<text x="339" y="652" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ proximo_intento : TIMESTAMPTZ</text>
+<text x="339" y="667" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ motivos : JSONB    + bundle : JSONB</text>
+<text x="339" y="682" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ latencia_ms : INT</text>
+<rect x="680" y="500" width="280" height="179" rx="7" fill="#fff6d8" stroke="#a98300" stroke-width="1.5"/>
+<text x="820" y="495" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" font-style="italic" fill="#5b6b7a" text-anchor="middle">«añadida por el parcial»</text>
+<line x1="680" y1="530" x2="960" y2="530" stroke="#a98300" stroke-width="1.2"/>
+<text x="820" y="520" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">EventoAuditoria</text>
+<text x="689" y="547" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ evento_id : BIGSERIAL «PK»</text>
+<text x="689" y="562" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ ts : TIMESTAMPTZ   (cuándo)</text>
+<text x="689" y="577" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ actor : VARCHAR    (quién)</text>
+<text x="689" y="592" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ rol : VARCHAR</text>
+<text x="689" y="607" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ accion : VARCHAR   (qué)</text>
+<text x="689" y="622" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ recurso : VARCHAR</text>
+<text x="689" y="637" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ resultado : VARCHAR (cómo terminó)</text>
+<text x="689" y="652" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ hash_anterior : CHAR(64)</text>
+<text x="689" y="667" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ hash : CHAR(64)</text>
+<rect x="1030" y="500" width="250" height="149" rx="7" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.5"/>
+<text x="1155" y="495" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" font-style="italic" fill="#5b6b7a" text-anchor="middle">«añadida por el parcial»</text>
+<line x1="1030" y1="530" x2="1280" y2="530" stroke="#1f8a5c" stroke-width="1.2"/>
+<text x="1155" y="520" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">RefTerminologia</text>
+<text x="1039" y="547" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ dx_local : VARCHAR «PK»</text>
+<text x="1039" y="562" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ cie10 : VARCHAR</text>
+<text x="1039" y="577" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ descripcion : VARCHAR</text>
+<text x="1039" y="592" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">— — — RefLoinc — — —</text>
+<text x="1039" y="607" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ prueba_local : VARCHAR «PK»</text>
+<text x="1039" y="622" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ loinc : VARCHAR</text>
+<text x="1039" y="637" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ unidad : VARCHAR</text>
+<rect x="1030" y="110" width="250" height="119" rx="7" fill="#fde9ef" stroke="#b5325c" stroke-width="1.5"/>
+<line x1="1030" y1="140" x2="1280" y2="140" stroke="#b5325c" stroke-width="1.2"/>
+<text x="1155" y="130" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">UsuarioPlataforma</text>
+<text x="1039" y="157" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ usuario : VARCHAR «PK»</text>
+<text x="1039" y="172" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ rol : Rol</text>
+<text x="1039" y="187" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ documento : BIGINT  (si es paciente)</text>
+<text x="1039" y="202" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ sede_id : INT</text>
+<text x="1039" y="217" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ permisos : lista</text>
+<rect x="1030" y="290" width="250" height="134" rx="7" fill="#e7f6ee" stroke="#1f8a5c" stroke-width="1.5"/>
+<line x1="1030" y1="320" x2="1280" y2="320" stroke="#1f8a5c" stroke-width="1.2"/>
+<text x="1155" y="310" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="12.5" font-weight="700" fill="#14202b" text-anchor="middle">BundleFHIR</text>
+<text x="1039" y="337" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ id : VARCHAR</text>
+<text x="1039" y="352" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ type : transaction | document</text>
+<text x="1039" y="367" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ entry : lista de recursos</text>
+<text x="1039" y="382" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ Patient / Encounter</text>
+<text x="1039" y="397" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ Condition (CIE-10)</text>
+<text x="1039" y="412" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#14202b" text-anchor="start">+ Observation (LOINC)</text>
+<line x1="270" y1="184" x2="330" y2="192" stroke="#14202b" stroke-width="1.5" marker-end="url(#rombo)"/>
+<rect x="277" y="171" width="46" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="300" y="183" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">1 .. *</text>
+<line x1="580" y1="192" x2="650" y2="177" stroke="#14202b" stroke-width="1.5" marker-end="url(#rombo)"/>
+<rect x="592" y="167" width="46" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="615" y="179" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">1 .. *</text>
+<line x1="880" y1="177" x2="940" y2="177" stroke="#14202b" stroke-width="1.5" marker-end="url(#rombo)"/>
+<line x1="455" y1="274" x2="455" y2="320" stroke="#14202b" stroke-width="1.5" marker-end="url(#rombo)"/>
+<rect x="432" y="280" width="46" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="455" y="292" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">1 .. *</text>
+<line x1="580" y1="379" x2="650" y2="360" stroke="#14202b" stroke-width="1.5" marker-end="url(#rombo)"/>
+<rect x="592" y="352" width="46" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="615" y="364" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">0 .. 1</text>
+<line x1="270" y1="379" x2="330" y2="365" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<rect x="274" y="355" width="52" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="300" y="367" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">atiende</text>
+<line x1="155" y1="500" x2="155" y2="439" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha-abierta)"/>
+<line x1="610" y1="597" x2="680" y2="560" stroke="#14202b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+<rect x="622" y="561" width="46" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="645" y="573" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">genera</text>
+<line x1="470" y1="500" x2="1100" y2="460" stroke="#14202b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+<rect x="759" y="463" width="52" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="785" y="475" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">produce</text>
+<line x1="1030" y1="540" x2="960" y2="540" stroke="#14202b" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#flecha)"/>
+<rect x="969" y="523" width="52" height="16" rx="4" fill="#ffffff" opacity="0.92"/>
+<text x="995" y="535" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10.5" font-weight="400" fill="#5b6b7a" text-anchor="middle">traduce</text>
+<line x1="700" y1="681" x2="700" y2="681" stroke="#14202b" stroke-width="1.5" marker-end="url(#flecha)"/>
+<path d="M 960 655 q 40 0 40 -28 q 0 -28 -40 -28" fill="none" stroke="#14202b" stroke-width="1.4" marker-end="url(#flecha)"/>
+<text x="1006" y="631" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="start">hash_anterior</text>
+<text x="1006" y="645" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="10" font-weight="400" fill="#5b6b7a" text-anchor="start">(cadena)</text>
+<text x="24" y="835" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="400" fill="#5b6b7a" text-anchor="start">Lectura: la identidad del paciente entre sedes es el documento. Cada nodo guarda la parte de la historia que atendió esa sede;</text>
+<text x="24" y="853" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="400" fill="#5b6b7a" text-anchor="start">mensaje_bus, evento_auditoria y ref_terminologia viven en el almacén central para que el bus y la auditoría sobrevivan a la caída de una sede.</text>
+<text x="24" y="876" font-family='Segoe UI, Helvetica, Arial, sans-serif' font-size="11.5" font-weight="400" fill="#5b6b7a" text-anchor="start">Los campos fhir_*_id son el vínculo con FHIR y la base de la métrica de cobertura de migración por sede.</text>
+</svg>
