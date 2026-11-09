@@ -68,11 +68,16 @@ def entregar_a_sede(registro: Dict[str, Any], ids: Dict[str, Optional[str]],
                 INSERT INTO usuario (documento_id, tipo_documento, nombre_completo,
                                      fecha_nacimiento, sexo, sede_id, fhir_patient_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
+                -- Regla de precedencia: el bus COMPLETA los datos de
+                -- identificación que falten, pero no sobreescribe los que la
+                -- sede ya tiene. Un HL7 solo trae «Apellido^Nombre», así que
+                -- dejarlo ganar degradaría un nombre completo del legado. El
+                -- `fhir_patient_id` es la excepción: lo aporta el bus.
                 ON CONFLICT (documento_id) DO UPDATE
-                   SET nombre_completo  = COALESCE(NULLIF(EXCLUDED.nombre_completo, ''),
-                                                   usuario.nombre_completo),
-                       fecha_nacimiento = COALESCE(EXCLUDED.fecha_nacimiento, usuario.fecha_nacimiento),
-                       sexo             = COALESCE(EXCLUDED.sexo, usuario.sexo),
+                   SET nombre_completo  = COALESCE(NULLIF(usuario.nombre_completo, ''),
+                                                   EXCLUDED.nombre_completo),
+                       fecha_nacimiento = COALESCE(usuario.fecha_nacimiento, EXCLUDED.fecha_nacimiento),
+                       sexo             = COALESCE(NULLIF(usuario.sexo, 'U'), EXCLUDED.sexo),
                        fhir_patient_id  = COALESCE(EXCLUDED.fhir_patient_id, usuario.fhir_patient_id),
                        updated_at       = NOW()
                 RETURNING documento_id;
@@ -102,12 +107,15 @@ def entregar_a_sede(registro: Dict[str, Any], ids: Dict[str, Optional[str]],
                                       fecha_triage, clasificacion_triage, profesional_codigo,
                                       mensaje_id, fhir_encounter_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                -- Misma precedencia para la atención: un ORU^R01 trae
+                -- resultados, no reabre el encuentro, así que no debe mover
+                -- la fecha de ingreso ni el triage que ya estaban.
                 ON CONFLICT (visita) DO UPDATE
-                   SET fecha_ingreso        = COALESCE(EXCLUDED.fecha_ingreso, atencion.fecha_ingreso),
-                       clasificacion_triage = COALESCE(EXCLUDED.clasificacion_triage,
-                                                       atencion.clasificacion_triage),
-                       profesional_codigo   = COALESCE(EXCLUDED.profesional_codigo,
-                                                       atencion.profesional_codigo),
+                   SET fecha_ingreso        = COALESCE(atencion.fecha_ingreso, EXCLUDED.fecha_ingreso),
+                       clasificacion_triage = COALESCE(atencion.clasificacion_triage,
+                                                       EXCLUDED.clasificacion_triage),
+                       profesional_codigo   = COALESCE(atencion.profesional_codigo,
+                                                       EXCLUDED.profesional_codigo),
                        fhir_encounter_id    = COALESCE(EXCLUDED.fhir_encounter_id,
                                                        atencion.fhir_encounter_id),
                        mensaje_id           = COALESCE(EXCLUDED.mensaje_id, atencion.mensaje_id)

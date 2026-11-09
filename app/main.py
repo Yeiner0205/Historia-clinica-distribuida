@@ -34,7 +34,6 @@ from fhir.transformador import FHIRTransformer
 
 import app.middleware as middleware
 import psycopg2
-from fastapi_mcp import FastApiMCP
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -1343,6 +1342,7 @@ async def matriz_permisos():
         ("Ver diagnósticos y notas clínicas", "diagnostico:ver"),
         ("Generar el Reporte de HC de otro paciente", "reporte:generar"),
         ("Ver el estado de la plataforma", "plataforma:estado"),
+        ("Operar el bus (reencolar, normalizar el legado)", "bus:operar"),
         ("Leer la auditoría completa", "auditoria:leer"),
         ("Apagar o encender un nodo (demo)", "nodo:controlar"),
         ("Enviar o reencolar mensajes del bus", "bus:enviar"),
@@ -1858,7 +1858,7 @@ async def bus_enviar_csv(request: Request, sede: int = Query(..., ge=1, le=3),
 @app.post("/api/v1/bus/migrar", tags=["bus"],
           summary="Normaliza a FHIR el legado de una sede (cobertura 0 % → 100 %)")
 async def bus_migrar(sede: int = Query(..., ge=1, le=3),
-                     claims: dict = Depends(auth.requiere("bus:enviar"))):
+                     claims: dict = Depends(auth.requiere("bus:operar"))):
     try:
         async with httpx.AsyncClient(timeout=300.0) as cli:
             r = await cli.post(f"{sedes.HSB_BASE_URL}/hsb/migrar", params={"sede": sede})
@@ -1874,7 +1874,7 @@ async def bus_migrar(sede: int = Query(..., ge=1, le=3),
 @app.post("/api/v1/bus/mensajes/{mensaje_id}/reencolar", tags=["bus"],
           summary="Devuelve un mensaje muerto a la cola")
 async def bus_reencolar(mensaje_id: int, authorization: Optional[str] = Header(None),
-                        claims: dict = Depends(auth.requiere("bus:enviar"))):
+                        claims: dict = Depends(auth.requiere("bus:operar"))):
     try:
         async with httpx.AsyncClient(timeout=60.0) as cli:
             r = await cli.post(f"{sedes.HSB_BASE_URL}/hsb/mensajes/{mensaje_id}/reencolar",
@@ -2013,19 +2013,30 @@ async def metrics_api_json():
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # ============================================================================
-# MCP - Model Context Protocol
-# Expone todos los endpoints de la API como herramientas para agentes de IA
+# MCP — Model Context Protocol (extra heredado del proyecto, opcional)
+#
+# Expone los endpoints como herramientas para agentes de IA. No es un
+# requisito del parcial, y la compatibilidad entre `fastapi-mcp` y `mcp`
+# cambia entre versiones: si falla, la API debe arrancar igual. El requisito
+# no funcional es que `docker compose up` levante el sistema, y un extra roto
+# no puede impedirlo.
 # ============================================================================
-mcp = FastApiMCP(
-    app,
-    name="Historia Clínica Distribuida MCP",
-    description=(
-        "Servidor MCP del sistema de Historia Clínica Distribuida. "
-        "Permite a agentes de IA consultar y gestionar pacientes FHIR, "
-        "ejecutar queries SQL distribuidas, y monitorear el estado de los nodos PostgreSQL."
-    ),
-)
-mcp.mount()  # Disponible en /mcp
+mcp = None
+try:
+    from fastapi_mcp import FastApiMCP
+
+    mcp = FastApiMCP(
+        app,
+        name="Historia Clínica Distribuida MCP",
+        description=(
+            "Servidor MCP de la plataforma de interoperabilidad clínica: consulta "
+            "unificada de las 3 sedes, pacientes FHIR, estado del bus y de los nodos."
+        ),
+    )
+    mcp.mount()  # Disponible en /mcp
+    logger.info("MCP montado en /mcp")
+except Exception as exc:  # noqa: BLE001
+    logger.warning("MCP no disponible (%s). La API y las vistas funcionan sin él.", exc)
 
 PORT = 8001
 

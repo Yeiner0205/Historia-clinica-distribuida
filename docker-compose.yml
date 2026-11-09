@@ -1,20 +1,177 @@
-# Historia Clínica Distribuida - Sistema Completo
-# Levantar: docker compose up -d  (o docker-compose up -d)
-# Puertos: 5433 (nodo1), 5434 (nodo2), 5435 (nodo3), 8001 (app)
+# ============================================================================
+# Plataforma distribuida de interoperabilidad clínica — Parcial final
+#
+# Un solo comando levanta todo (RNF):
+#     docker compose up -d
+#
+# Servicios:
+#   pg_nodo1/2/3   un nodo PostgreSQL por sede (Sincelejo, Cartagena, Corozal).
+#                  Cada uno carga su esquema y sus datos sintéticos en el
+#                  primer arranque, con fhir_patient_id NULL: la cobertura
+#                  FHIR empieza en 0 %.
+#   pg_central     almacén de la plataforma: cola del bus (mensaje_bus),
+#                  auditoría encadenada (evento_auditoria), terminologías
+#                  (ref_terminologia) y la base de HAPI. Está fuera de las
+#                  sedes a propósito: si una sede cae, el bus y la auditoría
+#                  siguen en pie.
+#   hapi-fhir      servidor FHIR R4 de referencia (valida los Bundle).
+#   hsb            bus de integración (HL7 v2 y CSV → FHIR), puerto 8000.
+#   app            API y las cuatro vistas por rol, puerto 8001.
+#
+# Las claves de este archivo son valores de demostración; para cambiarlas,
+# copie .env.example como .env (no se versiona).
+# ============================================================================
 
 services:
-  app:
-    build: .
-    container_name: historia_clinica_app
-    ports:
-      - "8001:8001"
+
+  # ─────────────────────────── Sede 1 · Sincelejo ───────────────────────────
+  pg_nodo1:
+    image: postgres:15
+    container_name: pg_nodo1
+    ports: ["5433:5432"]
     environment:
-      - PYTHONUNBUFFERED=1
+      POSTGRES_USER: ${PG_USER:-admin}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-admin}
+      POSTGRES_DB: ${PG_DB_SEDE:-historia_clinica}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./templates:/app/templates
-      - ./static:/app/static
+      - pg_data_nodo1:/var/lib/postgresql/data
+      - ./db/sede/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
+      - ./db/sede/02_sede1.sql:/docker-entrypoint-initdb.d/02_sede.sql:ro
+      - ./db/sede/03_datos_sede1.sql:/docker-entrypoint-initdb.d/03_datos.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-admin} -d ${PG_DB_SEDE:-historia_clinica}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks: [red_hc]
+
+  # ─────────────────────────── Sede 2 · Cartagena ───────────────────────────
+  pg_nodo2:
+    image: postgres:15
+    container_name: pg_nodo2
+    ports: ["5434:5432"]
+    environment:
+      POSTGRES_USER: ${PG_USER:-admin}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-admin}
+      POSTGRES_DB: ${PG_DB_SEDE:-historia_clinica}
+    volumes:
+      - pg_data_nodo2:/var/lib/postgresql/data
+      - ./db/sede/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
+      - ./db/sede/02_sede2.sql:/docker-entrypoint-initdb.d/02_sede.sql:ro
+      - ./db/sede/03_datos_sede2.sql:/docker-entrypoint-initdb.d/03_datos.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-admin} -d ${PG_DB_SEDE:-historia_clinica}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks: [red_hc]
+
+  # ──────────────────────────── Sede 3 · Corozal ────────────────────────────
+  pg_nodo3:
+    image: postgres:15
+    container_name: pg_nodo3
+    ports: ["5435:5432"]
+    environment:
+      POSTGRES_USER: ${PG_USER:-admin}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-admin}
+      POSTGRES_DB: ${PG_DB_SEDE:-historia_clinica}
+    volumes:
+      - pg_data_nodo3:/var/lib/postgresql/data
+      - ./db/sede/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
+      - ./db/sede/02_sede3.sql:/docker-entrypoint-initdb.d/02_sede.sql:ro
+      - ./db/sede/03_datos_sede3.sql:/docker-entrypoint-initdb.d/03_datos.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-admin} -d ${PG_DB_SEDE:-historia_clinica}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks: [red_hc]
+
+  # ─────────────── Almacén central: cola, auditoría y FHIR ──────────────────
+  pg_central:
+    image: postgres:15
+    container_name: pg_central
+    ports: ["5436:5432"]
+    environment:
+      POSTGRES_USER: ${PG_USER:-admin}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-admin}
+      POSTGRES_DB: ${PG_CENTRAL_DB:-hsb}
+    volumes:
+      - pg_data_central:/var/lib/postgresql/data
+      - ./db/central/01_esquema.sql:/docker-entrypoint-initdb.d/01_esquema.sql:ro
+      - ./db/central/02_hapi_db.sh:/docker-entrypoint-initdb.d/02_hapi_db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-admin} -d ${PG_CENTRAL_DB:-hsb}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks: [red_hc]
+
+  # ───────────────────────── Servidor FHIR R4 (HAPI) ────────────────────────
+  hapi-fhir:
+    image: hapiproject/hapi:latest
+    container_name: hapi_fhir_hc
+    ports: ["8080:8080"]
+    environment:
+      spring.datasource.url: jdbc:postgresql://pg_central:5432/fhir_db
+      spring.datasource.username: ${PG_USER:-admin}
+      spring.datasource.password: ${PG_PASSWORD:-admin}
+      spring.datasource.driverClassName: org.postgresql.Driver
+      spring.jpa.properties.hibernate.dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgres94Dialect
+      hapi.fhir.fhir_version: R4
+      hapi.fhir.allow_external_references: "true"
+      hapi.fhir.allow_multiple_delete: "true"
+      hapi.fhir.subscription.resthook_enabled: "false"
+      hapi.fhir.reuse_cached_search_results_millis: "0"
     depends_on:
+      pg_central:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [red_hc]
+    healthcheck:
+      # La imagen de HAPI es «distroless»: no tiene shell, así que no admite
+      # healthcheck propio. Su disponibilidad se vigila desde fuera:
+      #   * GET /health de la API y del HSB informan `hapi_fhir.disponible`
+      #   * scripts/esperar_servicios.sh espera a que conteste antes de la demo
+      # Mientras HAPI arranca (~1 min), el bus deja los mensajes en
+      # `reintentando` y los entrega cuando responde: eso es justamente lo que
+      # se demuestra en la Fase 3.
+      disable: true
+
+  # ──────────────────────── Bus de integración (HSB) ────────────────────────
+  hsb:
+    build: .
+    container_name: hsb
+    command: ["uvicorn", "hsb.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports: ["8000:8000"]
+    environment:
+      USE_DOCKER_NAMES: "true"
+      PG_USER: ${PG_USER:-admin}
+      PG_PASSWORD: ${PG_PASSWORD:-admin}
+      PG_DB_SEDE: ${PG_DB_SEDE:-historia_clinica}
+      PG_CENTRAL_DB: ${PG_CENTRAL_DB:-hsb}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-cambieme}
+      JWT_HORAS: ${JWT_HORAS:-8}
+      PWD_PACIENTE: ${PWD_PACIENTE:-paciente123}
+      PWD_ADMISION: ${PWD_ADMISION:-admision123}
+      PWD_MEDICO: ${PWD_MEDICO:-medico123}
+      PWD_AUDITOR: ${PWD_AUDITOR:-auditor123}
+      HSB_MAX_INTENTOS: ${HSB_MAX_INTENTOS:-4}
+      HSB_ESPERA_BASE_S: ${HSB_ESPERA_BASE_S:-1}
+      HSB_INTERVALO_TRABAJADOR_S: ${HSB_INTERVALO_TRABAJADOR_S:-2}
+      HSB_HL7_EXIGE_CIE10: ${HSB_HL7_EXIGE_CIE10:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      pg_central:
+        condition: service_healthy
       pg_nodo1:
         condition: service_healthy
       pg_nodo2:
@@ -22,103 +179,70 @@ services:
       pg_nodo3:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - historia_clinica_net
+    networks: [red_hc]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
-  hapi-fhir:
-    image: hapiproject/hapi:latest
-    container_name: hapi_fhir_server
-    ports:
-      - "8080:8080"
+  # ─────────────────────── API y las cuatro vistas ──────────────────────────
+  app:
+    build: .
+    container_name: app_hc
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+    ports: ["8001:8001"]
     environment:
-      - spring.datasource.url=jdbc:postgresql://pg_nodo1:5432/fhir_db
-      - spring.datasource.username=admin
-      - spring.datasource.password=admin
-      - spring.datasource.driverClassName=org.postgresql.Driver
-      - spring.jpa.properties.hibernate.dialect=ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgres94Dialect
-      - hapi.fhir.fhir_version=R4
-      - hapi.fhir.subscription.resthook_enabled=false
-      - hapi.fhir.allow_external_references=true
-      - hapi.fhir.allow_multiple_delete=true
-      - hapi.fhir.reuse_cached_search_results_millis=60000
+      USE_DOCKER_NAMES: "true"
+      PG_USER: ${PG_USER:-admin}
+      PG_PASSWORD: ${PG_PASSWORD:-admin}
+      PG_DB_SEDE: ${PG_DB_SEDE:-historia_clinica}
+      PG_CENTRAL_DB: ${PG_CENTRAL_DB:-hsb}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-cambieme}
+      JWT_HORAS: ${JWT_HORAS:-8}
+      PWD_PACIENTE: ${PWD_PACIENTE:-paciente123}
+      PWD_ADMISION: ${PWD_ADMISION:-admision123}
+      PWD_MEDICO: ${PWD_MEDICO:-medico123}
+      PWD_AUDITOR: ${PWD_AUDITOR:-auditor123}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      # Las plantillas y los estáticos se montan para poder ajustar la
+      # interfaz sin reconstruir la imagen durante la sustentación.
+      - ./app/templates:/app/app/templates:ro
+      - ./app/static:/app/app/static:ro
+      # Socket de Docker: permite que el rol auditor apague y encienda el nodo
+      # de una sede desde el tablero (prueba de resiliencia). Es una concesión
+      # de la demostración: en producción esta acción la haría un operador con
+      # sus propias credenciales, no la API. Si se quita el montaje, el
+      # tablero muestra el comando equivalente para ejecutarlo en el host.
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
+      pg_central:
+        condition: service_healthy
       pg_nodo1:
         condition: service_healthy
+      pg_nodo2:
+        condition: service_healthy
+      pg_nodo3:
+        condition: service_healthy
+      hsb:
+        condition: service_started
     restart: unless-stopped
-    networks:
-      - historia_clinica_net
+    networks: [red_hc]
     healthcheck:
-      disable: true
-
-  pg_nodo1:
-    image: postgres:15
-    container_name: pg_nodo1
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: historia_clinica
-    volumes:
-      - pg_data_nodo1:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U admin -d historia_clinica" ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - historia_clinica_net
-
-  pg_nodo2:
-    image: postgres:15
-    container_name: pg_nodo2
-    ports:
-      - "5434:5432"
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: historia_clinica
-    volumes:
-      - pg_data_nodo2:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U admin -d historia_clinica" ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - historia_clinica_net
-
-  pg_nodo3:
-    image: postgres:15
-    container_name: pg_nodo3
-    ports:
-      - "5435:5432"
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: historia_clinica
-    volumes:
-      - pg_data_nodo3:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U admin -d historia_clinica" ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - historia_clinica_net
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
 volumes:
   pg_data_nodo1:
   pg_data_nodo2:
   pg_data_nodo3:
-
+  pg_data_central:
 
 networks:
-  historia_clinica_net:
+  red_hc:
     driver: bridge

@@ -32,8 +32,14 @@ def base_url() -> str:
     return sedes.HAPI_BASE_URL.rstrip("/")
 
 
+# 409 (conflicto de versión) y 412 (precondición) ocurren cuando dos entregas
+# del mismo recurso se cruzan: el mensaje no es inválido, solo llegó tarde, así
+# que se reintenta. 429 es control de flujo: también se reintenta.
+ESTADOS_TRANSITORIOS = (409, 412, 423, 429)
+
+
 def _procesar(resp: httpx.Response) -> Dict[str, Any]:
-    if resp.status_code >= 500:
+    if resp.status_code >= 500 or resp.status_code in ESTADOS_TRANSITORIOS:
         raise ErrorHapi(f"HAPI respondió {resp.status_code}", resp.status_code, resp.text, transitorio=True)
     if resp.status_code >= 400:
         raise ErrorHapi(f"HAPI rechazó la petición ({resp.status_code})", resp.status_code, resp.text,

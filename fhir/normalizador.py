@@ -19,6 +19,7 @@ Salida: los recursos Patient, Encounter, Condition (CIE-10), Observation
 Todas las referencias apuntan a recursos que existen dentro del propio Bundle.
 """
 
+import os
 import re
 import unicodedata
 from datetime import datetime, timedelta, timezone
@@ -35,6 +36,13 @@ from fhir import (
     SISTEMA_VISITA,
 )
 from fhir import terminologia
+
+# Base canónica de la plataforma. Los `fullUrl` de un Bundle deben ser URI
+# absolutas: `urn:uuid:` solo admite UUID reales, y nuestros identificadores
+# son deterministas a propósito (pac-1001, enc-V-S2-0101…), que es lo que hace
+# idempotente la entrega. Con esta base, las referencias relativas del Bundle
+# (`Patient/pac-1001`) se resuelven dentro del propio Bundle.
+BASE_CANONICA = os.getenv("FHIR_BASE_CANONICA", "http://hc-distribuida.local/fhir")
 
 SEXO_FHIR = {"M": "male", "F": "female", "O": "other", "U": "unknown"}
 
@@ -418,10 +426,17 @@ def bundle_transaccion(registro: Dict[str, Any]) -> Dict[str, Any]:
     entradas = []
     for recurso in normalizado["recursos"]:
         ref = f"{recurso['resourceType']}/{recurso['id']}"
-        # Sin `fullUrl`: en un Bundle `transaction` el `request.url` ya
-        # identifica el recurso, y el PUT sobre un id determinista es la
-        # garantía de que reenviar no duplica.
-        entradas.append({"resource": recurso, "request": {"method": "PUT", "url": ref}})
+        # El `PUT` sobre un identificador determinista es lo que hace que
+        # reenviar el mensaje no duplique. El `fullUrl` absoluto no cambia esa
+        # semántica, pero es lo que exige el validador para poder resolver las
+        # referencias relativas (`Patient/pac-1007`) dentro del Bundle.
+        entradas.append(
+            {
+                "fullUrl": f"{BASE_CANONICA}/{ref}",
+                "resource": recurso,
+                "request": {"method": "PUT", "url": ref},
+            }
+        )
     return {
         "resourceType": "Bundle",
         "id": f"bdl-{normalizado['ids']['encounter'] or normalizado['ids']['patient']}",
@@ -486,9 +501,14 @@ def bundle_documento(
         ],
     }
 
-    entradas = [{"fullUrl": f"urn:uuid:{composition['id']}", "resource": composition}]
-    entradas.append({"fullUrl": f"urn:uuid:{patient['id']}", "resource": patient})
-    entradas.extend({"fullUrl": f"urn:uuid:{r['id']}", "resource": r} for r in recursos if r["resourceType"] != "Patient")
+    def url(recurso: Dict[str, Any]) -> str:
+        return f"{BASE_CANONICA}/{recurso['resourceType']}/{recurso['id']}"
+
+    # En un Bundle `document` la primera entrada debe ser la Composition.
+    entradas = [{"fullUrl": url(composition), "resource": composition},
+                {"fullUrl": url(patient), "resource": patient}]
+    entradas.extend({"fullUrl": url(r), "resource": r}
+                    for r in recursos if r["resourceType"] != "Patient")
 
     return {
         "resourceType": "Bundle",

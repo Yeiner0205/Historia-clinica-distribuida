@@ -448,7 +448,7 @@
                     const detalle = (m.motivos && m.motivos.length)
                         ? `<ul>${m.motivos.map((x) => `<li>${Fmt.escapar(x)}</li>`).join('')}</ul>`
                         : `<code>${Fmt.escapar((m.recursos || []).join(', '))}</code>`;
-                    const reencolar = (m.estado === 'muerto' && Sesion.puede('bus:enviar'))
+                    const reencolar = (m.estado === 'muerto' && Sesion.puede('bus:operar'))
                         ? `<button type="button" class="secundario" data-reencolar="${m.mensaje_id}">Reencolar</button>` : '';
                     return `<tr>
                         <td>${m.mensaje_id}</td><td>${Fmt.escapar(Fmt.texto(m.formato))}</td>

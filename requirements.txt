@@ -1,8 +1,25 @@
+# ── API y bus ───────────────────────────────────────────────────────────────
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
-psycopg2-binary==2.9.9
 pydantic>=2.7.2
-fhir.resources>=7.1.0
 httpx>=0.27.0
+
+# ── Base de datos distribuida ───────────────────────────────────────────────
+psycopg2-binary==2.9.9
+
+# ── Seguridad: token JWT firmado (RF5) ──────────────────────────────────────
+PyJWT>=2.8.0
+
+# ── Model Context Protocol (opcional: expone la API a agentes de IA) ────────
 fastapi-mcp>=0.3.3
 mcp>=1.6.0
+
+# ── Pruebas (unitarias, de integración y de extremo a extremo) ──────────────
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+
+# Nota: no se usa `fhir.resources`. Los recursos FHIR se construyen como JSON
+# en la capa fhir/ y se validan contra el servidor HAPI (`Bundle/$validate`),
+# que es el validador de referencia del estándar. Así la plataforma no queda
+# atada a la versión de una librería de modelos, y el paquete local `fhir/`
+# del repositorio no entra en conflicto con el de la librería.

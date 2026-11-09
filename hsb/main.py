@@ -310,7 +310,7 @@ def detalle_mensaje(mensaje_id: int) -> Dict[str, Any]:
 
 @app.post("/hsb/mensajes/{mensaje_id}/reencolar", summary="Devuelve un mensaje muerto a la cola")
 def reencolar_mensaje(mensaje_id: int, authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
-    claims = _exigir("bus:enviar", authorization)
+    claims = _exigir("bus:operar", authorization)
     resultado = cola.reencolar(mensaje_id)
     auditoria.registrar(claims.get("sub", "?"), claims.get("rol", ""), "bus_reencolar",
                         f"mensaje:{mensaje_id}", "ok", {"resultado": resultado.get("resultado")})

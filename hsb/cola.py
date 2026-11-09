@@ -58,6 +58,12 @@ def recibir(registro: Dict[str, Any], payload: str, procesar_ahora: bool = True)
     """
     clave = registro.get("clave_idempotencia") or f"auto:{normalizador.id_encuentro(registro)}"
 
+    # Si lo vamos a procesar aquí mismo, el mensaje nace «reservado»: el
+    # trabajador de fondo no debe tomarlo en paralelo (si procesara el mismo
+    # mensaje a la vez, las dos entregas chocarían en HAPI). Si esta llamada
+    # muere a mitad, pasada la reserva el trabajador lo retoma.
+    reserva = RESERVA_S if procesar_ahora else 0
+
     try:
         with db.cursor_central() as cur:
             cur.execute(
@@ -65,7 +71,8 @@ def recibir(registro: Dict[str, Any], payload: str, procesar_ahora: bool = True)
                 INSERT INTO mensaje_bus (clave_idempotencia, origen, sede_id, formato, tipo,
                                          documento, estado, max_intentos, payload, registro,
                                          proximo_intento)
-                VALUES (%s, %s, %s, %s, %s, %s, 'recibido', %s, %s, %s::jsonb, NOW())
+                VALUES (%s, %s, %s, %s, %s, %s, 'recibido', %s, %s, %s::jsonb,
+                        NOW() + (%s || ' seconds')::interval)
                 ON CONFLICT (clave_idempotencia) DO NOTHING
                 RETURNING mensaje_id;
                 """,
@@ -79,6 +86,7 @@ def recibir(registro: Dict[str, Any], payload: str, procesar_ahora: bool = True)
                     MAX_INTENTOS,
                     payload,
                     json.dumps(registro, ensure_ascii=False, default=str),
+                    reserva,
                 ),
             )
             fila = cur.fetchone()
@@ -265,6 +273,13 @@ def procesar(mensaje_id: int) -> Dict[str, Any]:
 def _fallar(mensaje_id: int, mensaje: Dict[str, Any], registro: Dict[str, Any],
             error: str, transitorio: bool) -> Dict[str, Any]:
     """Aplica la política de reintentos o manda el mensaje a la cola de muertos."""
+    # Un estado terminal no se degrada: si otra ejecución ya lo entregó, este
+    # fallo es una carrera, no una pérdida.
+    actual = obtener(mensaje_id)
+    if actual and actual["estado"] == "entregado":
+        logger.info("Mensaje %s ya estaba entregado; se ignora el fallo '%s'", mensaje_id, error)
+        return _respuesta(actual, "entregado")
+
     intentos = int(mensaje["intentos"]) + 1
     maximo = int(mensaje["max_intentos"] or MAX_INTENTOS)
 

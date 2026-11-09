@@ -92,7 +92,10 @@ CREATE TABLE IF NOT EXISTS atencion (
 
 -- El número de visita identifica el encuentro en el sistema legado: con él la
 -- reentrega del mismo mensaje actualiza la fila en lugar de crear otra.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_atencion_visita ON atencion (visita) WHERE visita IS NOT NULL;
+-- El índice no es parcial a propósito: PostgreSQL trata los NULL como
+-- distintos, así que admite atenciones sin visita, y `ON CONFLICT (visita)`
+-- puede inferirlo (con un índice parcial habría que repetir su predicado).
+CREATE UNIQUE INDEX IF NOT EXISTS uq_atencion_visita ON atencion (visita);
 CREATE INDEX IF NOT EXISTS idx_atencion_documento ON atencion (documento_id);
 
 -- ──────────────────────────── Tecnologías en salud ──────────────────────────
@@ -133,8 +136,9 @@ CREATE TABLE IF NOT EXISTS diagnostico (
     FOREIGN KEY (atencion_id) REFERENCES atencion(atencion_id)
 );
 CREATE INDEX IF NOT EXISTS idx_diagnostico_atencion ON diagnostico (atencion_id);
+-- Un diagnóstico CIE-10 por atención: la reentrega actualiza, no duplica.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_diagnostico_atencion_cie10
-    ON diagnostico (atencion_id, cie10) WHERE cie10 IS NOT NULL;
+    ON diagnostico (atencion_id, cie10);
 
 -- ───────────────────── Observaciones / laboratorio (LOINC) ──────────────────
 CREATE TABLE IF NOT EXISTS observacion (
@@ -151,8 +155,9 @@ CREATE TABLE IF NOT EXISTS observacion (
     FOREIGN KEY (atencion_id) REFERENCES atencion(atencion_id)
 );
 CREATE INDEX IF NOT EXISTS idx_observacion_documento ON observacion (documento_id);
+-- Un resultado por prueba LOINC y atención: la reentrega actualiza el valor.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_observacion_atencion_loinc
-    ON observacion (atencion_id, loinc) WHERE loinc IS NOT NULL;
+    ON observacion (atencion_id, loinc);
 
 -- ──────────────────────────────── Egreso ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS egreso (

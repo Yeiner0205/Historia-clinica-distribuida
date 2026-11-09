@@ -55,7 +55,8 @@ PERMISOS: Dict[str, List[str]] = {
         "paciente:registrar",
         "atencion:abrir",
         "bus:estado",
-        "bus:enviar",
+        "bus:enviar",   # enviar los mensajes de su sede al bus
+        "bus:operar",   # reencolar un mensaje muerto y lanzar la normalización
     ],
     ROL_MEDICO: [
         "paciente:buscar",
@@ -75,6 +76,7 @@ PERMISOS: Dict[str, List[str]] = {
         "auditoria:leer",
         "nodo:controlar",
         "bus:estado",
+        "bus:operar",   # opera la plataforma, pero no envía contenido clínico
         "bundle:otros",
     ],
 }

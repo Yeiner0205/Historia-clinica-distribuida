@@ -168,7 +168,17 @@ def verificar_cadena(desde: int = 0) -> Dict[str, Any]:
         )
         eventos = [dict(r) for r in cur.fetchall()]
 
-    anterior = GENESIS
+        # Si se verifica un tramo, el eslabón de partida es el hash del evento
+        # anterior al tramo, no el génesis.
+        anterior = GENESIS
+        if desde:
+            cur.execute(
+                "SELECT hash FROM evento_auditoria WHERE evento_id <= %s ORDER BY evento_id DESC LIMIT 1;",
+                (desde,),
+            )
+            fila = cur.fetchone()
+            if fila:
+                anterior = fila["hash"]
     for ev in eventos:
         detalle = ev["detalle"] if isinstance(ev["detalle"], dict) else json.loads(ev["detalle"] or "{}")
         contenido = _canonico(
