@@ -46,14 +46,16 @@ El historial está organizado por fases, no en un único commit final:
 
 | Commit | Qué entrega |
 | --- | --- |
-| `cf5f2c9` | Estado base: el repositorio de referencia tal como se recibió |
-| `cac0508` | Fases 1–3: estructura, capa FHIR y bus de integración |
-| `80dc3e5` | Fases 4–5: seguridad, auditoría, consulta unificada, reporte y las cuatro vistas |
-| `9c01fd4` | Las 96 pruebas y los defectos que destaparon |
-| `579d6fb` | Documentación, diagramas, guion de demostración e infraestructura opcional |
-| `9cdbd90` | Resultados medidos, colección de Postman y limpieza |
-| `91069ea` | Coherencia de las vistas heredadas con las reglas de la plataforma |
-| `28f3947` | Autoría del trabajo individual en informe, README y bitácora |
+| `795ca4c` | Estado base: el repositorio de referencia tal como se recibió |
+| `a45fae2` | Fases 1–3: estructura, capa FHIR y bus de integración |
+| `fb5a861` | Fases 4–5: seguridad, auditoría, consulta unificada, reporte y las cuatro vistas |
+| `b698ca4` | Las 96 pruebas y los defectos que destaparon |
+| `58a4060` | Documentación, diagramas, guion de demostración e infraestructura opcional |
+| `feb715a` | Resultados medidos, colección de Postman y limpieza |
+| `d3c08f7` | Coherencia de las vistas heredadas con las reglas de la plataforma |
+| `d729d46` | Autoría del trabajo individual en informe, README y bitácora |
+| `e0e6d4d` | Actualización de la tabla de commits tras unificar la autoría |
+| `39e8d78` | Municipios de Sucre y Bolívar en el registro; correo de contacto actualizado |
 
 ---
 
