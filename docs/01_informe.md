@@ -17,7 +17,7 @@ Estructura de la plantilla v7. Cada sección indica la fase en la que se entrega
 **Título (14 palabras).** Plataforma distribuida de interoperabilidad clínica
 con FHIR R4 y bus de integración para tres sedes.
 
-**Autor.** Yeiner Julian Perez Vitola — Ingeniería de Sistemas — grencitoop7@gmail.com
+**Autor.** Yeiner Julian Perez Vitola — Ingeniería de Sistemas — yeinerpv0205@gmail.com
 
 *Trabajo individual.* El enunciado contempla equipos de dos estudiantes; este
 parcial se desarrolló y se sustenta de forma individual.
@@ -422,7 +422,6 @@ fhir/     normalizador a FHIR R4, terminologías y cliente HAPI
 comun/    sedes, acceso a datos, seguridad y auditoría (compartido)
 db/       esquemas y datos sintéticos de las sedes y del almacén central
 docs/     informe, diagramas UML y anexos
-infra/    Keycloak, observabilidad y Kubernetes (opcionales)
 tests/    96 pruebas unitarias y de integración
 ejemplos/ los mensajes del contrato y la colección de pruebas
 scripts/  espera de servicios, demostración y verificador de auditoría

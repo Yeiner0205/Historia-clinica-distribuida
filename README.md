@@ -76,7 +76,6 @@ fhir/      normalizador a FHIR R4, terminologías, cliente HAPI
 comun/     sedes, acceso a datos, seguridad y auditoría
 db/        esquemas y datos sintéticos (sedes y central)
 docs/      informe, diagramas UML y anexos
-infra/     Keycloak, observabilidad y Kubernetes (opcionales)
 tests/     96 pruebas unitarias y de integración
 ejemplos/  mensajes del contrato y colección de pruebas
 scripts/   espera de servicios, demostración y verificador
@@ -299,18 +298,6 @@ cp .env.example .env     # y editarlo; .env no se versiona
 
 ---
 
-## Qué falta por hacer (declarado, no escondido)
-
-* **Verificar las referencias** del informe y añadir dos o tres fuentes de
-  Latinoamérica: sección 13.4 de [docs/01_informe.md](docs/01_informe.md). La
-  regla del parcial dice que no se aceptan fuentes que no se hayan abierto.
-* Capturas reales de las cuatro vistas para la sección de interfaces (la
-  lista está al final de [docs/05_guion_demo.md](docs/05_guion_demo.md)).
-* Bonus no implementados: anclaje en Hyperledger Fabric, Kubernetes en
-  Minikube, pruebas de carga medidas, y Prometheus con Grafana (los
-  `/metrics` ya están listos; en [infra/](infra/) quedan las plantillas).
-
----
 
 ## Resolución de problemas
 

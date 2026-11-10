@@ -9,7 +9,7 @@ de asistentes de IA y de código abierto.
 
 | Autor | Rol | Correo | Usuario de Git |
 | --- | --- | --- | --- |
-| **Yeiner Julian Perez Vitola** | Desarrollo completo de la plataforma: capa de datos, bus, FHIR, seguridad, vistas, pruebas y documentación | grencitoop7@gmail.com | `Yeiner Julian Perez Vitola` |
+| **Yeiner Julian Perez Vitola** | Desarrollo completo de la plataforma: capa de datos, bus, FHIR, seguridad, vistas, pruebas y documentación | Yeinerpv0205@gmail.com | `Yeiner Julian Perez Vitola` |
 
 **Trabajo individual.** El enunciado contempla equipos de dos estudiantes;
 este parcial se desarrolló y se sustenta de forma individual. No hay reparto
