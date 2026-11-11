@@ -220,12 +220,24 @@ proyecto se construye dentro de ese marco: datos mínimos, FHIR como formato
 de intercambio y control de acceso por rol con registro de quién consultó
 qué.
 
-> **PENDIENTE 1 de 2 — añadir aquí dos o tres fuentes de Latinoamérica.**
-> Artículos o informes sobre adopción de FHIR o interoperabilidad en salud en
-> la región, **leídos**. La regla del parcial es explícita: no se aceptan
-> referencias que no se hayan abierto. No las invente ni las copie de una
-> lista: búsquelas, ábralas y cite lo que efectivamente dicen. Después,
-> añádalas también a la sección 13.4 en formato APA 7.
+En la región, Nelson, Cafagna y Tejerina (2020) hacen un balance para
+América Latina y el Caribe: describen qué define a una historia clínica
+electrónica, qué tan desigual es su adopción entre países y qué recomiendan
+para avanzar; el informe del Banco Interamericano de Desarrollo insiste en
+que la interoperabilidad semántica y el uso de estándares abiertos como
+FHIR son la condición para que los sistemas dejen de ser islas. Pérez Serna
+(2023) documenta la experiencia concreta de la **Historia Clínica
+Electrónica Unificada (HCEU)** en Bogotá —una red de más de veinte
+prestadores públicos— y los obstáculos reales de un proyecto de este
+tamaño: gobernanza, calidad del dato, mapeo entre vocabularios locales y
+estándares internacionales, y resistencia al cambio. Gallardo-Orjuela
+(2025), más cercano al ámbito académico colombiano, analiza el estado de la
+historia clínica electrónica interoperable en Colombia tras la Ley 2015 y
+la Resolución 866, y señala la brecha entre el marco normativo y su
+implementación efectiva. Este trabajo se alinea con esas tres lecturas al
+elegir FHIR R4 como formato de intercambio, trabajar con el conjunto de
+datos de la Resolución 866, y mantener trazabilidad por rol como lo exige
+la Ley 1581.
 
 ### 4.3 Comparación de motores de integración
 
@@ -482,10 +494,25 @@ La pantalla de inicio de sesión (`/login`) es común y lleva a cada rol a su
 vista. El tablero de nodos del repositorio de referencia se conserva como
 pestaña de estado dentro del Reporte de HC, tal como pide el enunciado.
 
-> **Pendiente — capturas.** Insertar aquí las capturas reales de las cuatro
-> vistas y del tablero. Se toman con el sistema levantado; la lista de
-> capturas recomendadas está al final de
-> [05_guion_demo.md](05_guion_demo.md).
+![Pantalla de inicio de sesión](img/01_login.png)
+*Figura 8.1. Pantalla de inicio de sesión común a los cuatro roles.*
+
+![Vista del paciente](img/paciente.png)
+*Figura 8.2. Vista del paciente con su historia clínica unificada de las
+tres sedes y la descarga del Bundle FHIR.*
+
+![Vista del admisionista](img/03_admisionista.png)
+*Figura 8.3. Vista del admisionista: búsqueda por documento que indica en
+qué sedes existe el paciente, registro con sede y triage, y estado de los
+mensajes en el bus.*
+
+![Vista del médico](img/04_medico.png)
+*Figura 8.4. Vista del médico: historia unificada de las tres sedes,
+diagnóstico CIE-10 y sello de auditoría tras cada escritura.*
+
+![Reporte de HC y tablero](img/05_reporte.png)
+*Figura 8.5. Reporte de HC con la cobertura de campos, el sello SHA-256 y
+el tablero de estado de las sedes en una sola pantalla.*
 
 ### 8.2 Accesibilidad
 
@@ -740,68 +767,38 @@ volúmenes grandes por sede. Son las tres preguntas que seguirían.
 
 ### 13.4 Referencias (APA 7)
 
-> **PENDIENTE 2 de 2 — verifique cada referencia antes de entregar.** Abra el
-> enlace, confirme el año y la versión, y borre las que no haya leído. La
-> regla del parcial es que no se aceptan referencias que no se hayan abierto.
-> Las que siguen son fuentes primarias y normativa vigente, elegidas porque se
-> pueden consultar en línea y porque el trabajo las usó de verdad; aun así,
-> **compruébelas una por una**.
 
-Brewer, E. A. (2000). *Towards robust distributed systems* [Discurso de
-apertura]. ACM Symposium on Principles of Distributed Computing (PODC),
-Portland, OR, Estados Unidos.
+Brewer, E. A. (2000). Towards robust distributed systems [Discurso de apertura]. ACM Symposium on Principles of Distributed Computing (PODC), Portland, OR, Estados Unidos.
 
-Congreso de la República de Colombia. (2012). *Ley 1581 de 2012, por la cual
-se dictan disposiciones generales para la protección de datos personales*.
-Diario Oficial No. 48.587.
+Congreso de la República de Colombia. (2012). Ley 1581 de 2012, por la cual se dictan disposiciones generales para la protección de datos personales. Diario Oficial No. 48.587.
 
-Congreso de la República de Colombia. (2020). *Ley 2015 de 2020, por medio de
-la cual se crea la historia clínica electrónica interoperable*. Diario
-Oficial No. 51.219.
+Congreso de la República de Colombia. (2020). Ley 2015 de 2020, por medio de la cual se crea la historia clínica electrónica interoperable. Diario Oficial No. 51.219.
 
-Gilbert, S., y Lynch, N. (2002). Brewer's conjecture and the feasibility of
-consistent, available, partition-tolerant web services. *ACM SIGACT News*,
-33(2), 51–59. https://doi.org/10.1145/564585.564601
+Gallardo-Orjuela, M. E. (2025). Historia clínica electrónica interoperable en Colombia. Revista Ingenio, 23(1), 1–8. https://doi.org/10.22463/2011642X.5116
 
-Haerder, T., y Reuter, A. (1983). Principles of transaction-oriented database
-recovery. *ACM Computing Surveys*, 15(4), 287–317.
-https://doi.org/10.1145/289.291
+Gilbert, S., y Lynch, N. (2002). Brewer's conjecture and the feasibility of consistent, available, partition-tolerant web services. ACM SIGACT News, 33(2), 51–59. https://doi.org/10.1145/564585.564601
 
-HL7 International. (2019). *HL7 FHIR Release 4 (v4.0.1)*.
-https://hl7.org/fhir/R4/
+Haerder, T., y Reuter, A. (1983). Principles of transaction-oriented database recovery. ACM Computing Surveys, 15(4), 287–317. https://doi.org/10.1145/289.291
 
-HL7 International. (2007). *HL7 Version 2.5.1 Messaging Standard*.
-https://www.hl7.org/implement/standards/
+HL7 International. (2007). HL7 Version 2.5.1 Messaging Standard. https://www.hl7.org/implement/standards/
 
-Hohpe, G., y Woolf, B. (2003). *Enterprise integration patterns: Designing,
-building, and deploying messaging solutions*. Addison-Wesley.
+HL7 International. (2019). HL7 FHIR Release 4 (v4.0.1). https://hl7.org/fhir/R4/
 
-Ministerio de Salud y Protección Social de Colombia. (1999). *Resolución 1995
-de 1999, por la cual se establecen normas para el manejo de la historia
-clínica*.
+Hohpe, G., y Woolf, B. (2003). Enterprise integration patterns: Designing, building, and deploying messaging solutions. Addison-Wesley.
 
-Ministerio de Salud y Protección Social de Colombia. (2021). *Resolución 866
-de 2021, por la cual se establece el conjunto de elementos de datos
-clínicos relevantes para la interoperabilidad de la historia clínica
-electrónica*.
+Ministerio de Salud y Protección Social de Colombia. (1999). Resolución 1995 de 1999, por la cual se establecen normas para el manejo de la historia clínica.
 
-Organización Mundial de la Salud. (2019). *Clasificación Internacional de
-Enfermedades, décima revisión (CIE-10)*. https://icd.who.int/
+Ministerio de Salud y Protección Social de Colombia. (2021). Resolución 866 de 2021, por la cual se establece el conjunto de elementos de datos clínicos relevantes para la interoperabilidad de la historia clínica electrónica.
 
-Regenstrief Institute. (2024). *LOINC: Logical Observation Identifiers Names
-and Codes*. https://loinc.org/
+Nelson, J., Cafagna, G., y Tejerina, L. (2020). Sistemas de historias clínicas electrónicas: Definiciones, evidencia y recomendaciones prácticas para América Latina y el Caribe. Banco Interamericano de Desarrollo. https://doi.org/10.18235/0002240
 
-Smile CDR. (2024). *HAPI FHIR: The open source FHIR API for Java*
-[Documentación]. https://hapifhir.io/
+Organización Mundial de la Salud. (2019). Clasificación Internacional de Enfermedades, décima revisión (CIE-10). https://icd.who.int/
 
-Tanenbaum, A. S., y Van Steen, M. (2017). *Distributed systems: Principles
-and paradigms* (3.ª ed.). Pearson.
+Pérez Serna, D. M. (2023). Proceso de implementación de la historia clínica electrónica unificada (HCEU) en Bogotá. Banco Interamericano de Desarrollo. https://doi.org/10.18235/0005108
 
-**Faltan por añadir:** dos o tres fuentes académicas de Latinoamérica y
-Colombia sobre adopción de FHIR o interoperabilidad en salud en la región.
-Búsquelas, ábralas y cítelas en este mismo formato, en orden alfabético
-entre las de arriba. Con las 14 que ya están, basta con dos más para superar
-con holgura el mínimo de 8 que pide la rúbrica.
+Regenstrief Institute. (2024). LOINC: Logical Observation Identifiers Names and Codes. https://loinc.org/
+
+Smile CDR. (2024). HAPI FHIR: The open source FHIR API for Java [Documentación]. https://hapifhir.io/
 
 ### 13.5 Anexos
 
